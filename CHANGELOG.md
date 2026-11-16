@@ -4,6 +4,9 @@ All notable changes to zlearn. Versions follow [semver](https://semver.org).
 
 ## Unreleased
 
+### Added
+- `zlearn check`: a pull-request gate. Lists the files a branch changes and asks the team server which have AI changes nobody has understood. `--fail-on unreviewed|blind`, GitHub annotations and job summary, `ZLEARN_TEAM_KEY` for CI, soft-fails on outages unless `--strict`.
+
 ### Fixed
 - Hooks now match edited files to the repository by canonical path, so Windows short names (such as `RUNNER~1`), case differences and symlinks can no longer make an edit invisible. Found by CI on Windows.
 

@@ -116,3 +116,20 @@ export function contributorCount(root: string, days = 90): number {
     return 0;
   }
 }
+
+/**
+ * Files changed on this branch compared with a base ref (merge-base diff, like a pull request shows).
+ * Falls back through origin/main, main and the previous commit so it works in most CI checkouts.
+ */
+export function changedSince(root: string, base?: string): string[] {
+  const candidates = [base, "origin/main", "origin/master", "main", "master", "HEAD~1"].filter((b): b is string => Boolean(b));
+  for (const ref of candidates) {
+    try {
+      const out = git(root, ["diff", "--name-only", "--diff-filter=ACMR", `${ref}...HEAD`]);
+      return out.split("\n").map((l) => l.trim()).filter(Boolean).map(toPosix);
+    } catch {
+      // try the next candidate
+    }
+  }
+  return [];
+}

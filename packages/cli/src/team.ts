@@ -5,6 +5,28 @@ import { readJson, writeJson } from "./util.js";
 
 export type TeamConfig = NonNullable<ReturnType<typeof loadGlobal>["team"]>;
 
+/** Team credentials for CI: ZLEARN_TEAM_KEY (+ ZLEARN_SERVER) win over the saved team, so no `team join` is needed in a pipeline. */
+export function resolveTeam(): { server: string; key: string } | null {
+  const key = process.env.ZLEARN_TEAM_KEY;
+  if (key) return { server: process.env.ZLEARN_SERVER || loadGlobal().team?.server || "https://zevqi.com", key };
+  const t = loadGlobal().team;
+  return t ? { server: t.server, key: t.key } : null;
+}
+
+export type CheckFile = { path: string; status: "unknown" | "blind" | "single" | "covered"; owners: number; unreviewed: boolean; risk: number; lastChange: string | null };
+export type CheckResult = { team: { name: string }; files: CheckFile[]; totals: { files: number; unreviewed: number; blind: number; single: number; covered: number; unknown: number } };
+
+/** Ask the team server which of these files have AI changes nobody has understood. */
+export async function checkFiles(files: string[], repo: string): Promise<CheckResult | { error: string; setup?: boolean }> {
+  const team = resolveTeam();
+  if (!team) return { error: "No team key found.", setup: true };
+  try {
+    return (await call(team, "POST", "/api/learn/v1/check", { files, repo })) as CheckResult;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export type RecordPayload = {
   id: string;
   repo: string;

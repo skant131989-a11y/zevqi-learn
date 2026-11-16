@@ -106,9 +106,9 @@ test("hooks never fail, even on garbage input", () => {
 import http from "node:http";
 import { spawn } from "node:child_process";
 
-const runAsync = (args, env) =>
+const runAsync = (args, env, cwd) =>
   new Promise((resolve) => {
-    const p = spawn(process.execPath, [CLI, ...args], { env: { ...process.env, NO_COLOR: "1", ...env } });
+    const p = spawn(process.execPath, [CLI, ...args], { cwd, env: { ...process.env, NO_COLOR: "1", ...env } });
     let stdout = "";
     let stderr = "";
     p.stdout.on("data", (d) => (stdout += d));
@@ -147,4 +147,78 @@ test("team join rejects a bad key, accepts a good one, and tolerates an offline 
   const offline = await runAsync(["team", "join", "--server", "http://127.0.0.1:1", "--key", "zlt_goodkeygoodkeygoodkey1234", "--email", "a@b.co"], { ZLEARN_HOME: home2 });
   assert.equal(offline.status, 0);
   assert.match(offline.stdout, /could not reach/);
+});
+
+// ── zlearn check (PR gate) ───────────────────────────────────────────────────────────────────────
+test("zlearn check reports risky files, honours --fail-on, and fails soft on outages", async (t) => {
+  const asked = [];
+  const server = http.createServer((req, res) => {
+    let raw = "";
+    req.on("data", (d) => (raw += d));
+    req.on("end", () => {
+      res.setHeader("content-type", "application/json");
+      if (req.url !== "/api/learn/v1/check" || req.headers.authorization !== "Bearer zlt_cikeycikeycikeycikey1234") {
+        res.statusCode = 401;
+        return void res.end(JSON.stringify({ error: "Invalid team key." }));
+      }
+      const body = JSON.parse(raw);
+      asked.push(body);
+      const status = { "src/risky.ts": ["blind", 0, true, 90], "src/solo.ts": ["single", 1, false, 40], "src/ok.ts": ["covered", 3, false, 5] };
+      const files = body.files.map((p) => {
+        const [s, owners, unreviewed, risk] = status[p] ?? ["unknown", 0, false, 0];
+        return { path: p, status: s, owners, unreviewed, risk, lastChange: null };
+      });
+      const count = (f) => files.filter(f).length;
+      res.end(JSON.stringify({ team: { name: "Acme" }, files, totals: { files: files.length, unreviewed: count((f) => f.unreviewed), blind: count((f) => f.status === "blind"), single: count((f) => f.status === "single"), covered: count((f) => f.status === "covered"), unknown: count((f) => f.status === "unknown") } }));
+    });
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  t.after(() => server.close());
+  const url = `http://127.0.0.1:${server.address().port}`;
+
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "zl-home-"));
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "zl-repo-"));
+  const git = (...a) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.io", ...a], { cwd: repo, stdio: "ignore" });
+  git("init", "-q", "-b", "main");
+  fs.writeFileSync(path.join(repo, "README.md"), "x\n");
+  git("add", "-A");
+  git("commit", "-qm", "init");
+  git("checkout", "-qb", "feature");
+  fs.mkdirSync(path.join(repo, "src"));
+  for (const f of ["risky", "solo", "ok", "new"]) fs.writeFileSync(path.join(repo, "src", `${f}.ts`), `export const ${f} = 1;\n`);
+  git("add", "-A");
+  git("commit", "-qm", "feature");
+
+  const env = { ZLEARN_HOME: home, ZLEARN_TEAM_KEY: "zlt_cikeycikeycikeycikey1234", ZLEARN_SERVER: url };
+
+  const report = await runAsync(["check", "--base", "main"], env, repo);
+  assert.equal(report.status, 0, report.stderr);
+  assert.match(report.stdout, /src\/risky\.ts/);
+  assert.match(report.stdout, /un-reviewed AI change/);
+  assert.match(report.stdout, /src\/solo\.ts/);
+  assert.doesNotMatch(report.stdout, /src\/ok\.ts/, "covered files are not listed");
+  assert.deepEqual(asked[0].files.sort(), ["src/new.ts", "src/ok.ts", "src/risky.ts", "src/solo.ts"], "sends exactly the files the branch changed");
+
+  assert.equal((await runAsync(["check", "--base", "main", "--fail-on", "unreviewed"], env, repo)).status, 1, "un-reviewed AI change fails the gate");
+  assert.equal((await runAsync(["check", "--base", "main", "--fail-on", "blind"], env, repo)).status, 1, "a blind spot fails the blind policy");
+  assert.equal((await runAsync(["check", "--files", "src/ok.ts,src/solo.ts", "--fail-on", "unreviewed"], env, repo)).status, 0, "clean files pass");
+  assert.equal((await runAsync(["check", "--fail-on", "sometimes"], env, repo)).status, 2, "bad policy is a usage error");
+
+  const json = JSON.parse((await runAsync(["check", "--base", "main", "--fail-on", "unreviewed", "--json"], env, repo)).stdout);
+  assert.equal(json.failed, true);
+  assert.equal(json.totals.unreviewed, 1);
+
+  const gh = await runAsync(["check", "--base", "main"], { ...env, GITHUB_ACTIONS: "true" }, repo);
+  assert.match(gh.stdout, /::warning file=src\/risky\.ts::/);
+  const ghFail = await runAsync(["check", "--base", "main", "--fail-on", "unreviewed"], { ...env, GITHUB_ACTIONS: "true" }, repo);
+  assert.match(ghFail.stdout, /::error file=src\/risky\.ts::/);
+
+  const noKey = await runAsync(["check", "--base", "main"], { ZLEARN_HOME: home }, repo);
+  assert.equal(noKey.status, 2);
+  assert.match(noKey.stderr, /ZLEARN_TEAM_KEY/);
+
+  const down = await runAsync(["check", "--base", "main", "--fail-on", "unreviewed"], { ...env, ZLEARN_SERVER: "http://127.0.0.1:1" }, repo);
+  assert.equal(down.status, 0, "an outage must not break a normal pipeline");
+  assert.match(down.stderr, /skipped/);
+  assert.equal((await runAsync(["check", "--base", "main", "--strict"], { ...env, ZLEARN_SERVER: "http://127.0.0.1:1" }, repo)).status, 3, "--strict fails on an outage");
 });

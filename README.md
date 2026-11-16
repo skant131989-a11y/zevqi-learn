@@ -85,6 +85,7 @@ Every hook always exits successfully, so zlearn can never break your session.
 | `zlearn config show` / `set apiKey\|provider\|model\|baseUrl [value]` | Settings. `set apiKey` prompts with hidden input. |
 | `zlearn doctor [--json]` | Checks that everything is wired up. |
 | `zlearn team join\|status\|sync\|leave` | Share scores with your team. |
+| `zlearn check [--base <ref>] [--fail-on unreviewed\|blind]` | Pull-request gate: which changed files have AI changes nobody understands. |
 | `zlearn uninstall` | Removes the hooks (your lessons stay in `.zlearn/`). |
 
 Run `zlearn help <command>` for details. `--json` works on `status`, `stats`, `doctor` and `team status`. The CLI respects `NO_COLOR`.
@@ -106,6 +107,30 @@ zlearn team join --server https://zevqi.com --key zlt_... --email you@company.co
 ```
 
 Lessons then sync automatically after each quiz. The team server is a hosted service and is not part of this open-source repository.
+
+### Gate pull requests in CI
+
+`zlearn check` asks your team server which files a pull request changes that still have AI-written changes nobody on the team has understood. It sends only file paths and the repository name, uses a team key from `ZLEARN_TEAM_KEY` (no `team join` needed in CI), and prints inline GitHub annotations and a job summary.
+
+```yaml
+# .github/workflows/zlearn.yml
+name: zlearn check
+on: pull_request
+jobs:
+  understand:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: git clone --depth 1 https://github.com/skant131989-a11y/zevqi-learn /tmp/zlearn && cd /tmp/zlearn && npm ci && npm run build:cli
+      - run: node /tmp/zlearn/packages/cli/dist/cli.js check --base origin/${{ github.base_ref }} --fail-on unreviewed
+        env:
+          ZLEARN_TEAM_KEY: ${{ secrets.ZLEARN_TEAM_KEY }}
+```
+
+Policies: `--fail-on none` (default, report only), `unreviewed` (fail if a changed file has an AI change nobody has reviewed), `blind` (fail if nobody has ever understood a changed file). A server outage never breaks your pipeline unless you pass `--strict`. Exit codes: 0 ok, 1 policy failed, 2 usage error, 3 outage with `--strict`.
 
 ## Privacy
 
