@@ -7,6 +7,22 @@ function git(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
 }
 
+/**
+ * The real, canonical form of a path: resolves symlinks, Windows 8.3 short names (RUNNER~1) and case differences.
+ * Works for files that do not exist yet (a new file the agent is about to write) by canonicalising the nearest existing parent.
+ * Used so an edited file can always be matched to the repository root that git reports.
+ */
+export function canonicalPath(p: string): string {
+  const abs = path.resolve(p);
+  try {
+    return fs.realpathSync.native(abs);
+  } catch {
+    const parent = path.dirname(abs);
+    if (parent === abs) return abs;
+    return path.join(canonicalPath(parent), path.basename(abs));
+  }
+}
+
 export function repoRoot(cwd: string): string | null {
   try {
     return path.resolve(git(cwd, ["rev-parse", "--show-toplevel"]).trim());

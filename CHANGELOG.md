@@ -4,6 +4,9 @@ All notable changes to zlearn. Versions follow [semver](https://semver.org).
 
 ## Unreleased
 
+### Fixed
+- Hooks now match edited files to the repository by canonical path, so Windows short names (such as `RUNNER~1`), case differences and symlinks can no longer make an edit invisible. Found by CI on Windows.
+
 ## 0.2.0
 
 ### Added

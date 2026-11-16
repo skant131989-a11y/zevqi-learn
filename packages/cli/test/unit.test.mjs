@@ -145,3 +145,18 @@ test("contributorCount counts distinct committers", async () => {
   assert.equal(contributorCount(repo, 90), 3);
   assert.equal(contributorCount(os.tmpdir() + "/definitely-not-a-repo-zl", 90), 0);
 });
+
+test("canonicalPath resolves dot segments, works for files that do not exist yet, and matches realpath", async () => {
+  const { canonicalPath } = await load("git.js");
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zl-canon-"));
+  fs.mkdirSync(path.join(dir, "src"));
+  const real = fs.realpathSync.native(dir);
+  assert.equal(canonicalPath(dir), real);
+  assert.equal(canonicalPath(path.join(dir, "src", "..", "src")), path.join(real, "src"));
+  // a brand-new file inside an existing directory canonicalises through its parent
+  assert.equal(canonicalPath(path.join(dir, "src", "new-file.ts")), path.join(real, "src", "new-file.ts"));
+  // and so does one inside a directory that does not exist yet
+  assert.equal(canonicalPath(path.join(dir, "a", "b", "c.ts")), path.join(real, "a", "b", "c.ts"));
+});

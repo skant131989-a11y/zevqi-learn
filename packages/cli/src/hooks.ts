@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { explainDiff, AiError } from "./ai.js";
 import { loadProject, projectDir } from "./config.js";
-import { diffForFiles, repoName, repoRoot } from "./git.js";
+import { canonicalPath, diffForFiles, repoName, repoRoot } from "./git.js";
 import { listLessons, newLessonId, pending, recordEdit, saveLesson, takeBuffer, type Lesson } from "./lessons.js";
 import { pushRecords, toRecord } from "./team.js";
 import { readJson, readStdin, toPosix, uid, writeJson } from "./util.js";
@@ -36,7 +36,8 @@ export async function postToolHook() {
   const root = repoRoot(input.cwd || process.cwd());
   if (!root) return;
   if (!fs.existsSync(projectDir(root))) return; // zlearn is not enabled in this repo
-  const rel = toPosix(path.relative(root, path.resolve(input.cwd || root, file)));
+  // Compare canonical paths so short names (C:\Users\RUNNER~1), case differences and symlinks cannot hide an edit.
+  const rel = toPosix(path.relative(canonicalPath(root), canonicalPath(path.resolve(input.cwd || root, file))));
   if (rel.startsWith("..") || rel.startsWith(".zlearn") || rel.startsWith(".claude")) return;
   recordEdit(root, rel, input.session_id);
 }
