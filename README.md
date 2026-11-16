@@ -148,7 +148,7 @@ See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 - **An AI explains AI.** Explanations and questions can be wrong or shallow. Treat them as a prompt to read the code, not a replacement for it.
 - **Claude Code first.** Codex and Cursor use different hook systems and are not supported yet. Outside Claude Code you can still run `zlearn explain` after any change.
 - Large diffs are truncated before being sent to the model (about 60 KB total).
-- Not yet verified against every Claude Code version. If a hook does not fire, run `zlearn doctor` and open `/hooks` in Claude Code.
+- The hook configuration matches Claude Code's documented settings schema (matcher groups, `command` + `args`, the `if` filter, `systemMessage` and `permissionDecision` output), checked against the official docs on 17 November 2026. It has not been exercised live on every Claude Code version. If a hook does not fire, run `zlearn doctor` and open `/hooks` in Claude Code.
 
 ## Development
 
