@@ -1,0 +1,12 @@
+{
+  "name": "zevqi-learn-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:cli": "npm run build -w zevqi-learn",
+    "test": "npm run test -w zevqi-learn"
+  }
+}

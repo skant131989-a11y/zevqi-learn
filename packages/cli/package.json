@@ -1,0 +1,20 @@
+{
+  "name": "zevqi-learn",
+  "version": "0.1.0",
+  "description": "Understand the code your AI agent writes, as fast as it writes it. Claude Code hook, quizzes and a team dashboard.",
+  "type": "module",
+  "bin": { "zlearn": "dist/cli.js" },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "npm run build && node --test test/e2e.test.mjs"
+  },
+  "keywords": ["claude-code", "ai", "code-review", "learning", "comprehension"],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
