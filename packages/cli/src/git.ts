@@ -90,3 +90,13 @@ export function changedFiles(root: string): string[] {
   run(["ls-files", "--others", "--exclude-standard"]);
   return [...out].filter((f) => !f.startsWith(".zlearn/") && !f.startsWith(".claude/"));
 }
+
+/** Distinct committers (by name and email) on the current branch in the last N days. 0 if git cannot say. */
+export function contributorCount(root: string, days = 90): number {
+  try {
+    const out = git(root, ["shortlog", "-sne", "HEAD", `--since=${days}.days`]);
+    return out.split("\n").filter((l) => l.trim()).length;
+  } catch {
+    return 0;
+  }
+}

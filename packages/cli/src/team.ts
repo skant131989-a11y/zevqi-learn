@@ -57,6 +57,21 @@ export async function createTeam(server: string, name: string, secret?: string):
   return json;
 }
 
+export type KeyCheck = { ok: true; teamName?: string } | { ok: false; reason: "invalid" | "unreachable"; message: string };
+
+/** Confirms a team key with the server before saving it, so a typo fails now instead of at the first sync. */
+export async function checkTeamKey(server: string, key: string): Promise<KeyCheck> {
+  try {
+    const res = await fetch(`${server.replace(/\/$/, "")}/api/learn/v1/summary`, { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) });
+    if (res.status === 401) return { ok: false, reason: "invalid", message: "That team key was not recognised. Check it with your admin." };
+    const json = (await res.json().catch(() => ({}))) as { team?: { name?: string } };
+    if (!res.ok) return { ok: false, reason: "unreachable", message: `The team server answered ${res.status}.` };
+    return { ok: true, teamName: json.team?.name };
+  } catch (e) {
+    return { ok: false, reason: "unreachable", message: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export function joinTeam(server: string, key: string, email: string, name?: string) {
   const cfg = loadGlobal();
   cfg.team = { server, key, email, name };

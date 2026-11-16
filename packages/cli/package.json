@@ -1,20 +1,49 @@
 {
   "name": "zevqi-learn",
-  "version": "0.1.0",
-  "description": "Understand the code your AI agent writes, as fast as it writes it. Claude Code hook, quizzes and a team dashboard.",
+  "version": "0.2.0",
+  "description": "Understand the code your AI agent writes, as fast as it writes it. Claude Code hooks, quizzes, streaks and a team dashboard.",
   "type": "module",
-  "bin": { "zlearn": "dist/cli.js" },
-  "files": ["dist", "README.md"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "zlearn": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "npm run build && node --test test/e2e.test.mjs"
+    "test": "npm run build && node --test test/unit.test.mjs test/cli.test.mjs test/e2e.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "node scripts/prepack.mjs"
   },
-  "keywords": ["claude-code", "ai", "code-review", "learning", "comprehension"],
+  "keywords": [
+    "claude-code",
+    "agentic-coding",
+    "ai",
+    "code-review",
+    "learning",
+    "comprehension-debt",
+    "developer-tools",
+    "cli"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0"
+  },
+  "author": "Neha Singh <hello@zevqi.com>",
+  "homepage": "https://zevqi.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skant131989-a11y/zevqi-learn.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/skant131989-a11y/zevqi-learn/issues"
   }
 }
