@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { loadProject, projectDir, providerOf, loadGlobal, saveProject } from "./config.js";
+import { apiKey, loadProject, projectDir, providerOf, loadGlobal, saveProject } from "./config.js";
 import { repoRoot } from "./git.js";
 import { aiDisclosure, c, fail } from "./util.js";
 export const flagStr = (v) => (typeof v === "string" ? v : undefined);
@@ -27,6 +27,6 @@ export function ensureAiNotice(root) {
     const cfg = loadProject(root);
     if (cfg.aiNotice)
         return;
-    console.log(c.dim(aiDisclosure(providerOf(loadGlobal()), cfg.maxFiles)) + "\n");
+    console.log(c.dim(aiDisclosure(providerOf(loadGlobal()), cfg.maxFiles, Boolean(apiKey(loadGlobal())))) + "\n");
     saveProject(root, { ...cfg, aiNotice: new Date().toISOString() });
 }

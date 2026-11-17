@@ -186,3 +186,14 @@ test("explain without a key points to the key-free way", () => {
   assert.match(out.stderr, /No API key/);
   assert.match(out.stderr, /zlearn init --agents/);
 });
+
+test("the disclosure matches reality: with no key it says nothing is sent to a model provider, with a key it names where the diff goes", () => {
+  const a = project();
+  const noKey = run(["init", "--no-prompt"], { cwd: a.repo, env: a.env });
+  assert.match(noKey.stdout, /No API key is set, so nothing is sent to any model provider/);
+  assert.doesNotMatch(noKey.stdout, /To anthropic, using your own API key/, "it does not describe a provider that is not in use");
+  const b = project();
+  const keyed = run(["init", "--no-prompt"], { cwd: b.repo, env: { ...b.env, ANTHROPIC_API_KEY: "test-key" } });
+  assert.match(keyed.stdout, /To anthropic, using your own API key/);
+  assert.match(keyed.stdout, /Nowhere else/);
+});

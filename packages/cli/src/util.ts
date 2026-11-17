@@ -125,8 +125,20 @@ export async function askLine(prompt: string): Promise<string> {
   }
 }
 
-/** What zlearn sends to the developer's own model provider, in plain words. Shown at init and once for older installs. */
-export function aiDisclosure(provider: string, maxFiles: number): string {
+/**
+ * What zlearn sends, in plain words. Shown at init (and once for older installs). With no API key nothing goes to any model
+ * provider, and the text says so instead of describing a provider that is not in use.
+ */
+export function aiDisclosure(provider: string, maxFiles: number, keyed = true): string {
+  if (!keyed) {
+    return [
+      "What zlearn sends, and where:",
+      "  - No API key is set, so nothing is sent to any model provider.",
+      "  - Nowhere else. Your team, and zevqi.com, never receive code, diffs, explanations or questions.",
+      "  - If you join a team: file paths, a content fingerprint, your own answer, and for zlearn scan commit counts and anonymous author ids. Summaries and notes only if you turn on sharing.",
+      `  - If you add an API key later, the diff of the files your agent changed (new files in full, up to ${maxFiles} files and about 60 KB per lesson) goes to that provider under your own account, and you will be told first.`,
+    ].join("\n");
+  }
   return [
     "What zlearn sends, and where:",
     `  - To ${provider}, using your own API key: the diff of the files your agent changed (new files in full), up to ${maxFiles} files and about 60 KB per lesson.`,

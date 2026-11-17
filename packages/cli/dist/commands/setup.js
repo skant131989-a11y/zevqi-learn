@@ -20,7 +20,7 @@ export const init = {
             fail(`--gate must be one of: ${GATES.join(", ")}`, 2);
         const existing = loadProject(root);
         if (!existing.aiNotice) {
-            console.log(c.bold(aiDisclosure(providerOf(loadGlobal()), existing.maxFiles)) + "\n");
+            console.log(c.bold(aiDisclosure(providerOf(loadGlobal()), existing.maxFiles, Boolean(apiKey(loadGlobal())))) + "\n");
             // Only a configured model key sends anything to a provider, so only then is a confirmation needed.
             if (apiKey(loadGlobal()) && process.stdin.isTTY && !ctx.flags["no-prompt"] && !ctx.flags.yes) {
                 const answer = await askLine("Continue? [Y/n] ");
