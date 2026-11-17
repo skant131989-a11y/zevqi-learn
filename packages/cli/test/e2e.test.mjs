@@ -250,6 +250,12 @@ test("review: a teammate's committed change becomes a lesson, and the evidence r
   const last = records[records.length - 1].lessons.find((l) => l.response === "clarify");
   assert.deepEqual(last.openQuestions, ["what if the amount is a string?"]);
 
+  // paths are resolved from where you are, not from the repository root
+  out = await runAsync(["review", "pay.js", "--commits", "1"], { cwd: path.join(repo, "src"), env, input: "a\nA\nA\ny\n" });
+  assert.equal(out.status, 0, out.stderr);
+  const newest = fs.readdirSync(path.join(repo, ".zlearn", "lessons")).map((f) => JSON.parse(fs.readFileSync(path.join(repo, ".zlearn", "lessons", f), "utf8"))).sort((x, y) => y.createdAt.localeCompare(x.createdAt))[0];
+  assert.deepEqual(newest.changedFiles, ["src/pay.js"], "a path typed relative to a subfolder maps to the repository path");
+
   // usage errors
   assert.equal((await runAsync(["review"], { cwd: repo, env })).status, 2, "review needs file names");
   assert.match((await runAsync(["review", "src/never-committed.js"], { cwd: repo, env })).stdout, /No git history/);

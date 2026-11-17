@@ -1,6 +1,6 @@
 import path from "node:path";
 import { loadProject, projectDir } from "../config.js";
-import { changedFiles, diffForHistory, fileRevs, repoName } from "../git.js";
+import { canonicalPath, changedFiles, diffForHistory, fileRevs, repoName } from "../git.js";
 import { explainDiff } from "../ai.js";
 import { newLessonId, saveLesson, type Lesson } from "../lessons.js";
 import { pushRecords, toRecord } from "../team.js";
@@ -81,7 +81,8 @@ export const review: Command = {
     if (wanted.length === 0) fail("Name the files to review.", 2, "Example: zlearn review src/payments/refund.ts");
     const commits = Math.max(1, Math.min(20, Number(flagStr(ctx.flags.commits)) || 5));
     const cfg = loadProject(root);
-    const files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(root, path.resolve(process.cwd(), f)).split(path.sep).join("/"));
+    // Canonical paths on both sides: a Windows short name (RUNNER~1) or a symlinked cwd must not make a file look like it is outside the repo.
+    const files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(canonicalPath(root), canonicalPath(path.resolve(process.cwd(), f))).split(path.sep).join("/"));
     const { text, included } = diffForHistory(root, files, commits);
     if (!text.trim()) return void console.log("No git history found for those files. Check the paths, and that the changes are committed.");
     console.log(c.dim(`Reading the last ${commits} commit${commits === 1 ? "" : "s"} for ${included.length} file${included.length === 1 ? "" : "s"}…`));
