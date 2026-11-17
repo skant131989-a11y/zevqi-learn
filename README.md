@@ -44,8 +44,8 @@ Prefer to build it from source? The package is not on npm yet:
 
 ```bash
 git clone https://github.com/zevqi/zlearn
-cd zlearn && npm install && npm run build:cli
-npm link -w zevqi-learn        # makes the `zlearn` command available
+cd zlearn/packages/cli && npm install && npm run build
+npm link                       # makes the `zlearn` command available
 ```
 
 ## Quick start

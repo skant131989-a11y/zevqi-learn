@@ -8,7 +8,7 @@ Requires Node 20+ and git.
 
 ```bash
 git clone https://github.com/zevqi/zlearn
-cd zlearn
+cd zlearn/packages/cli
 npm install
 npm test
 ```
@@ -49,7 +49,7 @@ packages/cli/src
 
 1. Open an issue first for anything larger than a small fix.
 2. Keep the change focused, with a short description of what and why.
-3. Make sure `npm run typecheck -w zevqi-learn` and `npm test` pass.
+3. Make sure `npm run typecheck` and `npm test` pass.
 4. Update `CHANGELOG.md` under "Unreleased".
 
 By contributing you agree your work is licensed under the MIT licence.
