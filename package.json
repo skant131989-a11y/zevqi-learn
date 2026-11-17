@@ -1,13 +1,29 @@
 {
-  "name": "@zevqi/zlearn",
-  "private": true,
+  "name": "zlearn-cli",
   "version": "0.4.0",
-  "scripts": {
-    "build:cli": "npm run build --prefix packages/cli",
-    "typecheck": "npm run typecheck --prefix packages/cli",
-    "test": "npm test --prefix packages/cli"
+  "description": "Understand the code your AI agent writes. A knowledge map from git, attested reviews and a team dashboard. No API key needed.",
+  "keywords": [
+    "zlearn",
+    "ai",
+    "code-review",
+    "comprehension-debt",
+    "claude-code",
+    "cursor",
+    "codex",
+    "agentic-coding",
+    "bus-factor",
+    "knowledge-map"
+  ],
+  "homepage": "https://zevqi.com",
+  "bugs": {
+    "url": "https://github.com/zevqi/zlearn/issues"
   },
-  "description": "Understand the code your AI agent writes. Command-line tool for zlearn by Zevqi.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zevqi/zlearn.git"
+  },
+  "license": "MIT",
+  "author": "Neha Singh <hello@zevqi.com>",
   "bin": {
     "zlearn": "packages/cli/dist/cli.js"
   },
@@ -20,9 +36,13 @@
   "engines": {
     "node": ">=20"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zevqi/zlearn.git"
+  "publishConfig": {
+    "access": "public"
   },
-  "license": "MIT"
+  "scripts": {
+    "build:cli": "npm run build --prefix packages/cli",
+    "typecheck": "npm run typecheck --prefix packages/cli",
+    "test": "npm test --prefix packages/cli",
+    "prepublishOnly": "node -e \"require('fs').accessSync('packages/cli/dist/cli.js')\""
+  }
 }
