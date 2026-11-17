@@ -8,7 +8,7 @@
   "scripts": {
     "build:cli": "npm run build -w zevqi-learn",
     "test": "npm run test -w zevqi-learn",
-    "prepare": "npm run build -w zevqi-learn"
+    "prepare": "node scripts/build.mjs"
   },
   "description": "Understand the code your AI agent writes. Command-line tool for zlearn by Zevqi.",
   "bin": {
