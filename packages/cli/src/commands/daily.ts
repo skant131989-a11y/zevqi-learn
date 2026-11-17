@@ -2,6 +2,8 @@ import path from "node:path";
 import { loadProject, projectDir } from "../config.js";
 import { canonicalPath, changedFiles, diffForHistory, fileRevs, repoName } from "../git.js";
 import { explainDiff } from "../ai.js";
+import { attestReview } from "../attest.js";
+import { apiKey, loadGlobal } from "../config.js";
 import { newLessonId, saveLesson, type Lesson } from "../lessons.js";
 import { pushRecords, toRecord } from "../team.js";
 import { AiError, explainJob, hooksInstalled } from "../hooks.js";
@@ -69,7 +71,7 @@ export const review: Command = {
   name: "review",
   group: "Daily use",
   summary: "Review recent committed changes to files (a teammate's, or your own from earlier) and add your evidence",
-  usage: "zlearn review <file...> [--commits 5]",
+  usage: "zlearn review <file...> [--commits 5] [--no-ai]",
   examples: [
     "zlearn review src/payments/refund.ts",
     "zlearn review src/auth/session.ts src/auth/tokens.ts --commits 3",
@@ -85,6 +87,15 @@ export const review: Command = {
     const files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(canonicalPath(root), canonicalPath(path.resolve(process.cwd(), f))).split(path.sep).join("/"));
     const { text, included } = diffForHistory(root, files, commits);
     if (!text.trim()) return void console.log("No git history found for those files. Check the paths, and that the changes are committed.");
+    // With a model key the review is AI-written questions. Without one (or with --no-ai) you read the change and describe it yourself.
+    if (ctx.flags["no-ai"] || !apiKey(loadGlobal())) {
+      try {
+        await attestReview(root, included, text, commits);
+      } catch (e) {
+        fail(e instanceof Error ? e.message : String(e));
+      }
+      return;
+    }
     console.log(c.dim(`Reading the last ${commits} commit${commits === 1 ? "" : "s"} for ${included.length} file${included.length === 1 ? "" : "s"}…`));
     try {
       const explanation = await explainDiff(text, included, repoName(root), "review");

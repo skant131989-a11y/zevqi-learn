@@ -4,6 +4,19 @@ All notable changes to zlearn. Versions follow [semver](https://semver.org).
 
 ## Unreleased
 
+## 0.4.0
+
+### Added
+- **`zlearn setup`: the whole first run in one command.** Joins your team, turns zlearn on in this repository and uploads the first knowledge map, with numbered steps and a dashboard link at the end. The email comes from `git config`, the key from `--key` or `ZLEARN_TEAM_KEY`. Install and setup are one paste: `npm install -g github:zevqi/zlearn; zlearn setup --key <teamKey>`.
+- **`zlearn scan`: a knowledge map from git history.** No model, no key, nothing for teammates to do. Uploads per-file commit counts, dates, AI co-author marks and anonymous author ids (hashes, never emails; names only with `--names`). `--dry-run` shows the exact payload and sends nothing. Bots are skipped, and deleted files, lockfiles and generated files are left out.
+- **Attested review without a model.** `zlearn review <file>` with no API key (or `--no-ai`) shows you the real change and asks you to describe it in your own words. Not graded. Your words stay on your machine; only the path, a content fingerprint and your own call are shared. Too-short and repeated answers are asked again.
+- **`zlearn lesson add`: lessons written by your own coding agent.** `zlearn init` with no API key adds a block to `AGENTS.md` (and a one-line import in `CLAUDE.md`) so Codex, Cursor or Claude Code write the lesson themselves. The files come from git, so a lesson can only describe files that really changed.
+- Dashboard links after `team join`, `scan` and `check`.
+
+### Changed
+- **A model key is now optional.** `zlearn doctor` no longer fails without one, and `zlearn init` asks for confirmation only when a key is configured, because only then is anything sent to a provider.
+- `zlearn check` is unchanged for older servers.
+
 ## 0.3.0
 
 ### Added

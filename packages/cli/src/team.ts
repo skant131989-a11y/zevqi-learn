@@ -51,7 +51,8 @@ export function toRecord(lesson: Lesson, share: Share): RecordPayload {
     files: lesson.changedFiles,
     status: lesson.status,
     correct: lesson.correct ?? null,
-    total: lesson.total ?? lesson.questions.length,
+    // An attested review has no questions and no score, so it sends none. The server shows it as attested.
+    total: lesson.explainer === "none" ? null : lesson.total ?? lesson.questions.length,
     createdAt: lesson.createdAt,
     completedAt: lesson.completedAt ?? null,
     ...(lesson.revs && Object.keys(lesson.revs).length ? { revs: lesson.revs } : {}),
@@ -131,6 +132,13 @@ export async function pushRecords(records: RecordPayload[]): Promise<{ sent: num
     writeJson(outbox(), batch.slice(-500));
     return { sent: 0, queued: batch.length, error: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/** Upload a git knowledge map. Throws with the server's message on failure. */
+export async function pushScan(payload: unknown): Promise<{ saved: number; people: number }> {
+  const team = resolveTeam();
+  if (!team) throw new Error("Not connected to a team. Run: zlearn team join --server <url> --key <key> --email <you>");
+  return call(team, "POST", "/api/learn/v1/scan", payload);
 }
 
 export async function teamSummary(): Promise<any> {

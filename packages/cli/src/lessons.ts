@@ -19,6 +19,10 @@ export type Lesson = {
   completedAt?: string;
   /** "change": the agent's own edits. "review": recent committed changes the developer chose to review (a teammate's, or their own from earlier). */
   kind?: "change" | "review";
+  /** Who wrote the explanation: the model behind your API key ("api") or your own coding agent through `zlearn lesson add` ("agent"). */
+  explainer?: "api" | "agent" | "none";
+  /** Attested reviews only: what the developer wrote in their own words. Never leaves the machine. */
+  attest?: string[];
   /** Content fingerprint (git blob hash, shortened) of each file when the lesson was made. Lets the team server tell when a file changed after a review. */
   revs?: Record<string, string>;
   decisions?: string[];

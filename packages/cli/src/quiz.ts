@@ -9,7 +9,7 @@ import { c } from "./util.js";
 const LETTERS = ["A", "B", "C", "D"];
 
 export function printLesson(lesson: Lesson) {
-  console.log("\n" + c.bold(c.cyan("What your agent changed")));
+  console.log("\n" + c.bold(c.cyan("What your agent changed")) + (lesson.explainer === "agent" ? c.dim("  (explained by your coding agent)") : ""));
   console.log(lesson.summary + "\n");
   for (const f of lesson.files) console.log(`  ${c.bold(f.path)}\n    ${c.dim(f.note)}`);
   const section = (title: string, items?: string[]) => {

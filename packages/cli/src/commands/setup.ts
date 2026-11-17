@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { apiKey, ensureGitignore, globalConfigPath, loadGlobal, loadProject, projectDir, providerOf, saveGlobal, saveProject, type Gate } from "../config.js";
+import { agentBlockInstalled, installAgentBlock, removeAgentBlock } from "../agents.js";
 import { repoRoot } from "../git.js";
 import { hooksInstalled, installHooks, settingsPath, uninstallHooks } from "../hooks.js";
 import { aiDisclosure, askLine, c, fail, mask, readSecret } from "../util.js";
@@ -12,7 +13,7 @@ export const init: Command = {
   name: "init",
   group: "Setup",
   summary: "Turn zlearn on in this repo (installs the Claude Code hooks)",
-  usage: "zlearn init [--shared | --global] [--gate off|warn|block] [--no-prompt | --yes]",
+  usage: "zlearn init [--shared | --global] [--gate off|warn|block] [--agents | --no-agents] [--no-prompt | --yes]",
   examples: ["zlearn init", "zlearn init --shared --gate block"],
   async run(ctx) {
     const root = needRoot();
@@ -21,7 +22,8 @@ export const init: Command = {
     const existing = loadProject(root);
     if (!existing.aiNotice) {
       console.log(c.bold(aiDisclosure(providerOf(loadGlobal()), existing.maxFiles)) + "\n");
-      if (process.stdin.isTTY && !ctx.flags["no-prompt"] && !ctx.flags.yes) {
+      // Only a configured model key sends anything to a provider, so only then is a confirmation needed.
+      if (apiKey(loadGlobal()) && process.stdin.isTTY && !ctx.flags["no-prompt"] && !ctx.flags.yes) {
         const answer = await askLine("Continue? [Y/n] ");
         if (/^n/i.test(answer.trim())) fail("Nothing was installed.", 1, "Run zlearn init again when you are ready.");
       }
@@ -39,9 +41,14 @@ export const init: Command = {
           saveGlobal({ ...loadGlobal(), apiKey: key });
           console.log(`${c.green("✓")} Saved ${c.dim(mask(key))} to ${c.dim(globalConfigPath())}`);
         }
-      } else {
-        console.log(`${c.yellow("!")} No API key yet. Set ${c.bold("ZLEARN_API_KEY")} (or ANTHROPIC_API_KEY), or run ${c.bold("zlearn config set apiKey")}.`);
       }
+    }
+    // No key (or --agents): let the coding agent that wrote the change write the lesson too. Works with Codex, Cursor and Claude Code.
+    if (ctx.flags.agents || (!apiKey(loadGlobal()) && !ctx.flags["no-agents"])) {
+      const r = installAgentBlock(root);
+      console.log(`${c.green("✓")} Your coding agent will write the lessons, so no API key is needed. Instructions ${r.agentsMd} in ${c.dim("AGENTS.md")}${r.claudeMd !== "none" ? `, import ${r.claudeMd} in ${c.dim("CLAUDE.md")}` : ""}.`);
+      console.log(c.dim("Commit those files so every agent on the project sees them. Works with Codex, Cursor and Claude Code. Prefer zlearn to explain changes itself? Run: zlearn config set apiKey"));
+      console.log(c.dim("Also no key needed: zlearn scan (who holds the knowledge of each file, from git) and zlearn review <file> (you describe a change in your own words)."));
     }
     console.log(c.dim("\nRestart Claude Code (or open /hooks) so it picks up the hooks. After your agent finishes a turn, run: zlearn learn"));
   },
@@ -55,7 +62,8 @@ export const uninstall: Command = {
   run(ctx) {
     const root = needRoot();
     const file = uninstallHooks(root, scopeOf(ctx));
-    console.log(`Removed zlearn hooks from ${file}. Your lessons stay in ${projectDir(root)}.`);
+    const removed = removeAgentBlock(root);
+    console.log(`Removed zlearn hooks from ${file}${removed.agentsMd ? ", and the lesson instructions from AGENTS.md" : ""}. Your lessons stay in ${projectDir(root)}.`);
   },
 };
 
@@ -120,7 +128,9 @@ export const doctor: Command = {
       const where = hooksInstalled(root);
       add(where.length > 0, `Claude Code hooks installed${where.length ? ` (${where.join(", ")})` : ""}`, "zlearn init");
     }
-    add(Boolean(apiKey(cfg)), `API key found (${providerOf(cfg)})`, "export ZLEARN_API_KEY=…  or  zlearn config set apiKey");
+    const agentMode = Boolean(root && agentBlockInstalled(root));
+    // A key is optional: scan, attested review and agent-written lessons all work without one.
+    add(true, apiKey(cfg) ? `API key found (${providerOf(cfg)}), so zlearn can write questions itself` : agentMode ? "No API key: your coding agent writes lessons (AGENTS.md instructions installed)" : "No API key: zlearn scan and zlearn review work without one (add a key for AI-written questions)");
     add(true, cfg.team ? `Team: ${cfg.team.server}` : "Team: not connected (optional)");
 
     emit(ctx, { ok: checks.every((x) => x.ok), checks }, () => {

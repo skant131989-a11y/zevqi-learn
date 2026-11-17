@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { explainDiff, AiError } from "./ai.js";
-import { loadProject, projectDir } from "./config.js";
+import { apiKey, loadGlobal, loadProject, projectDir } from "./config.js";
 import { canonicalPath, diffForFiles, fileRevs, repoName, repoRoot } from "./git.js";
 import { listLessons, newLessonId, pending, recordEdit, saveLesson, takeBuffer, type Lesson } from "./lessons.js";
 import { pushRecords, toRecord } from "./team.js";
@@ -47,6 +47,8 @@ export async function stopHook(cliPath: string) {
   const input = parse(await readStdin());
   const root = repoRoot(input.cwd || process.cwd());
   if (!root || !fs.existsSync(projectDir(root))) return;
+  // No API key means your coding agent writes the lessons (zlearn lesson add), so there is no background explanation to start.
+  if (!apiKey(loadGlobal())) return;
   const buf = takeBuffer(root);
   if (!buf) return;
   const jobId = uid("job_");

@@ -141,6 +141,34 @@ export function diffForHistory(root: string, files: string[], commits = 5): { te
   return { text: parts.join("\n"), included };
 }
 
+/** Raw history for `zlearn scan`: one record per non-merge commit with its author, date, subject, body and changed files. */
+export function scanLog(root: string, months = 12, maxCommits = 30000): string {
+  try {
+    return git(root, ["-c", "core.quotepath=off", "log", "--no-merges", `--since=${months}.months`, `-n${maxCommits}`, "--name-only", "--format=%x1e%H%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%b%x1f"]);
+  } catch {
+    return "";
+  }
+}
+
+/** Files in the repository right now (tracked by git), so a scan ignores files that were deleted or renamed away. */
+export function trackedFiles(root: string): Set<string> | null {
+  try {
+    return new Set(git(root, ["-c", "core.quotepath=off", "ls-files"]).split("\n").map((l) => l.trim()).filter(Boolean).map(toPosix));
+  } catch {
+    return null;
+  }
+}
+
+/** Files touched by one commit (default HEAD). Empty when the ref does not exist or the repository has no commits. */
+export function filesInCommit(root: string, ref = "HEAD"): string[] {
+  if (!/^[A-Za-z0-9._\/~^@{}-]{1,100}$/.test(ref)) return [];
+  try {
+    return git(root, ["diff-tree", "--no-commit-id", "--name-only", "-r", "--root", ref]).split("\n").map((l) => l.trim()).filter(Boolean).map(toPosix);
+  } catch {
+    return [];
+  }
+}
+
 /** Files with uncommitted changes (modified, staged or untracked), for a manual `zlearn explain`. */
 export function changedFiles(root: string): string[] {
   const out = new Set<string>();

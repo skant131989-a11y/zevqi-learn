@@ -32,7 +32,15 @@ Passed 3/3.
 
 ## Install
 
-Requires Node 20+ and git. The package is not on npm yet, so run it from source:
+Requires Node 20+ and git. In your project folder, with your team key (from your team admin or your Zevqi dashboard), one paste does everything: installs zlearn, joins your team, turns it on in this repository and uploads your first knowledge map. It works in macOS, Linux and Windows PowerShell.
+
+```bash
+npm install -g github:zevqi/zlearn; zlearn setup --key <your-team-key>
+```
+
+No team? Install it, then `zlearn init` and `zlearn scan --dry-run` to see what a scan finds. Nothing is sent anywhere. No API key is needed for any of this.
+
+Prefer to build it from source? The package is not on npm yet:
 
 ```bash
 git clone https://github.com/zevqi/zlearn
@@ -44,9 +52,13 @@ npm link -w zevqi-learn        # makes the `zlearn` command available
 
 ```bash
 cd your-project
-zlearn init                    # installs the hooks; offers to save your API key (input hidden)
-zlearn doctor                  # checks everything is wired up
+zlearn setup --key <your-team-key>   # join your team, turn zlearn on, scan this repository
+zlearn scan --dry-run                # see exactly what a scan would share, and send nothing
+zlearn review src/payments/refund.ts # read a change and describe it in your own words
+zlearn doctor                        # checks everything is wired up
 ```
+
+**No model key is needed.** The git scan, attested reviews, the pull-request gate and agent-written lessons all work without one. Add your own key only if you want zlearn to write diff-specific questions:
 
 Restart Claude Code (or open `/hooks`), then code as usual. When your agent finishes a turn, a lesson is built in the background. Take it whenever you like:
 
@@ -57,7 +69,7 @@ zlearn stats                   # streak, XP and level
 zlearn ui                      # local dashboard on 127.0.0.1
 ```
 
-You bring your own model key. `ZLEARN_API_KEY` is preferred, then `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, then the key saved by `zlearn config set apiKey`.
+The key is optional and yours: `ZLEARN_API_KEY` is preferred, then `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, then the key saved by `zlearn config set apiKey`. It is billed by your provider, never by us.
 
 ## How it works
 
@@ -76,6 +88,9 @@ Every hook always exits successfully, so zlearn can never break your session.
 | Command | What it does |
 |---|---|
 | `zlearn init [--shared\|--global] [--gate off\|warn\|block]` | Turn it on in this repo and install the hooks. |
+| `zlearn setup --key <teamKey> [--email <you>]` | One command: join your team, turn zlearn on here, and upload the first knowledge map. |
+| `zlearn scan [--months 12] [--names] [--dry-run]` | Map who holds the knowledge of each file from git history. No model, no key. Shares counts, dates and anonymous author ids, never code, messages or emails. |
+| `zlearn lesson add` | Save a lesson your coding agent wrote (JSON on stdin), so no key is needed. |
 | `zlearn learn [id]` | Take the quiz for the oldest un-reviewed change, then say whether you understand it. |
 | `zlearn review <file...> [--commits 5]` | Review the recent committed changes to files (a teammate's, or your own from earlier) and add your own evidence. |
 | `zlearn explain` | Explain your current uncommitted changes now. |
@@ -135,7 +150,8 @@ Policies: `--fail-on none` (default, report only), `unreviewed` (fail if a chang
 
 ## Privacy
 
-- **Your code goes only to the AI provider you configure**, using your own API key. It is never sent to a zlearn server.
+- **With no API key, no code is sent anywhere.** If you add one, the diff of the changed files goes only to the AI provider you configure, under your own account, and `zlearn init` says so first. Code is never sent to a zlearn server.
+- **`zlearn scan` sends** file paths, commit counts, first and last change dates, how many commits carry an AI co-author mark, and authors as anonymous ids (a hash of the email, not the email). Author names only with `--names`. Never code, commit messages or emails. `zlearn scan --dry-run` shows the exact payload and sends nothing.
 - **The team server only receives** file paths, a content fingerprint of each file (a git blob hash, so it can tell when a file changed), lesson ids, scores, your own answer (understood or needs clarification), timestamps and your name and email. Summaries and the note about what is unclear are shared only if you set `share` to `summaries` in `.zlearn/config.json`.
 - **`zlearn init` tells you exactly what goes to your model provider** before it installs anything: the diff of the files your agent changed (new files in full, about 60 KB per lesson). Do not use zlearn on code your provider agreement does not allow you to send.
 - **No telemetry.** The CLI makes no analytics calls.

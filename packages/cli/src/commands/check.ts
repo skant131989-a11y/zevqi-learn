@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { changedSince, repoName } from "../git.js";
-import { checkFiles, type CheckFile } from "../team.js";
+import { checkFiles, resolveTeam, type CheckFile } from "../team.js";
 import { c, fail } from "../util.js";
 import { emit, flagStr, needRoot, type Command } from "../context.js";
 
@@ -62,6 +62,8 @@ export const check: Command = {
       console.log(`${c.dim(`${t.covered} covered · ${t.single} one reviewer · ${t.blind} never reviewed · ${t.stale ?? 0} out of date · ${t.unreviewed} un-reviewed · ${t.unknown} not AI-changed`)}`);
       if (bad.length) console.log(c.red(`\n✗ ${bad.length} file${bad.length === 1 ? " breaks" : "s break"} the "${failOn}" policy. Run zlearn learn and pass the lessons, then push again.`));
       else console.log(c.green(`\n✓ ${failOn === "none" ? "Report only" : `Passes the "${failOn}" policy`}.`));
+      const server = resolveTeam()?.server;
+      if (interesting.length && server) console.log(c.dim(`Details and who can review these: ${server.replace(/\/$/, "")}/account`));
     });
 
     // GitHub Actions: inline annotations and a job summary.

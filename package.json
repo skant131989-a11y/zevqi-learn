@@ -1,12 +1,31 @@
 {
   "name": "zevqi-learn-monorepo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build:cli": "npm run build -w zevqi-learn",
-    "test": "npm run test -w zevqi-learn"
-  }
+    "test": "npm run test -w zevqi-learn",
+    "prepare": "npm run build -w zevqi-learn"
+  },
+  "description": "Understand the code your AI agent writes. Command-line tool for zlearn by Zevqi.",
+  "bin": {
+    "zlearn": "packages/cli/dist/cli.js"
+  },
+  "files": [
+    "packages/cli/dist",
+    "packages/cli/package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zevqi/zlearn.git"
+  },
+  "license": "MIT"
 }

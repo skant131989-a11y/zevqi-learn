@@ -77,7 +77,7 @@ async function post(url: string, headers: Record<string, string>, body: unknown)
 export async function explainDiff(diff: string, files: string[], repo: string, mode: "change" | "review" = "change"): Promise<Explanation> {
   const cfg = loadGlobal();
   const key = apiKey(cfg);
-  if (!key) throw new AiError("No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY), or run: zlearn config set apiKey <key>");
+  if (!key) throw new AiError("No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY), run: zlearn config set apiKey <key>, or run: zlearn init --agents so your coding agent writes the lessons and no key is needed.");
   const provider = providerOf(cfg);
   const model = defaultModel(provider, cfg);
   const intro = mode === "review" ? "These are recent committed changes (possibly written by a teammate or an agent) that the reader is about to review." : "These are uncommitted changes an AI coding agent just made.";

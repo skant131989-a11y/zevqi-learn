@@ -1,6 +1,6 @@
 {
   "name": "zevqi-learn",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Understand the code your AI agent writes, as fast as it writes it. Claude Code hooks, quizzes, streaks and a team dashboard.",
   "type": "module",
   "bin": {
@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "npm run build && node --test test/unit.test.mjs test/cli.test.mjs test/e2e.test.mjs",
+    "test": "npm run build && node --test test/unit.test.mjs test/cli.test.mjs test/e2e.test.mjs test/agent.test.mjs test/scan.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "node scripts/prepack.mjs"
   },

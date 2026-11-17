@@ -4,9 +4,12 @@ import { config, doctor, gate, init, uninstall } from "./setup.js";
 import { explain, learn, review, stats, status, ui } from "./daily.js";
 import { team } from "./team.js";
 import { check } from "./check.js";
+import { lesson } from "./lesson.js";
+import { scan } from "./scan.js";
+import { setup } from "./quickstart.js";
 import { hook } from "./hook.js";
 
-export const COMMANDS: Command[] = [init, uninstall, config, doctor, learn, review, explain, status, stats, ui, gate, team, check, hook];
+export const COMMANDS: Command[] = [setup, init, uninstall, config, doctor, learn, review, lesson, scan, explain, status, stats, ui, gate, team, check, hook];
 
 export function findCommand(name: string): Command | undefined {
   return COMMANDS.find((cmd) => cmd.name === name || cmd.aliases?.includes(name));

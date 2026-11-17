@@ -38,7 +38,10 @@ export const team: Command = {
       const check = await checkTeamKey(url, key);
       if (!check.ok && check.reason === "invalid") fail(check.message, 1, "Nothing was saved.");
       joinTeam(url, key, email, flagStr(ctx.flags.name));
-      if (check.ok) console.log(`${c.green("✓")} Joined ${check.teamName ? c.bold(check.teamName) : "the team"}. Results sync to ${url}. By default only scores and file names are shared, never code.`);
+      if (check.ok) {
+        console.log(`${c.green("✓")} Joined ${check.teamName ? c.bold(check.teamName) : "the team"}. Results sync to ${url}. By default only scores and file names are shared, never code.`);
+        console.log(c.dim(`Next: zlearn scan (maps who holds the knowledge of each file) or zlearn setup (does it all in this repo).`));
+      }
       else console.log(`${c.yellow("!")} Saved, but could not reach ${url} just now (${check.message}). Lessons will queue locally and sync later.`);
       return;
     }
