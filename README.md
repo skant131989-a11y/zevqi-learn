@@ -76,7 +76,8 @@ Every hook always exits successfully, so zlearn can never break your session.
 | Command | What it does |
 |---|---|
 | `zlearn init [--shared\|--global] [--gate off\|warn\|block]` | Turn it on in this repo and install the hooks. |
-| `zlearn learn [id]` | Take the quiz for the oldest un-reviewed change. |
+| `zlearn learn [id]` | Take the quiz for the oldest un-reviewed change, then say whether you understand it. |
+| `zlearn review <file...> [--commits 5]` | Review the recent committed changes to files (a teammate's, or your own from earlier) and add your own evidence. |
 | `zlearn explain` | Explain your current uncommitted changes now. |
 | `zlearn status [--json]` | What is waiting, and which files nobody has reviewed. |
 | `zlearn stats [--json]` | Your streak, XP and level for this project. |
@@ -135,7 +136,8 @@ Policies: `--fail-on none` (default, report only), `unreviewed` (fail if a chang
 ## Privacy
 
 - **Your code goes only to the AI provider you configure**, using your own API key. It is never sent to a zlearn server.
-- **The team server only receives** file paths, lesson ids, scores, timestamps and your name and email. Short summaries are shared only if you set `share` to `summaries` in `.zlearn/config.json`.
+- **The team server only receives** file paths, a content fingerprint of each file (a git blob hash, so it can tell when a file changed), lesson ids, scores, your own answer (understood or needs clarification), timestamps and your name and email. Summaries and the note about what is unclear are shared only if you set `share` to `summaries` in `.zlearn/config.json`.
+- **`zlearn init` tells you exactly what goes to your model provider** before it installs anything: the diff of the files your agent changed (new files in full, about 60 KB per lesson). Do not use zlearn on code your provider agreement does not allow you to send.
 - **No telemetry.** The CLI makes no analytics calls.
 - Local data lives in `.zlearn/` (git-ignored automatically). Your API key is read from the environment, or stored with owner-only permissions in `~/.zlearn/config.json`.
 - The local dashboard listens on `127.0.0.1` only and requires a random per-run token.
@@ -144,7 +146,7 @@ See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
 ## Honest limitations
 
-- **Scores are self-reported.** Quizzes run on the developer's own machine, so a determined person can fake a pass. It is a learning aid and a team signal, not an audit. Do not use it for performance reviews.
+- **Scores and answers are self-reported.** Quizzes run on the developer's own machine, so a determined person can fake a pass. It is evidence that someone engaged with a change, not proof of competence, and not an audit. Do not use it for performance reviews.
 - **An AI explains AI.** Explanations and questions can be wrong or shallow. Treat them as a prompt to read the code, not a replacement for it.
 - **Claude Code first.** Codex and Cursor use different hook systems and are not supported yet. Outside Claude Code you can still run `zlearn explain` after any change.
 - Large diffs are truncated before being sent to the model (about 60 KB total).

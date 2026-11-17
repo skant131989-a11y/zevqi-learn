@@ -160,3 +160,60 @@ test("canonicalPath resolves dot segments, works for files that do not exist yet
   // and so does one inside a directory that does not exist yet
   assert.equal(canonicalPath(path.join(dir, "a", "b", "c.ts")), path.join(real, "a", "b", "c.ts"));
 });
+
+test("validate keeps question kinds and the explanation's decisions, dependencies and risks", async () => {
+  const { validate } = await load("ai.js");
+  const ex = validate(
+    {
+      summary: "Adds retries.",
+      files: [{ path: "a.ts", note: "retry loop" }],
+      decisions: ["Retry only on timeouts", "", "x".repeat(500)],
+      depends: ["The gateway honours idempotency keys"],
+      risks: ["a", "b", "c"],
+      questions: [
+        { kind: "Failure case", q: "What if the ledger write fails?", options: ["a", "b", "c", "d"], answer: 1, why: "w" },
+        { kind: "Nonsense", q: "Why?", options: ["a", "b"], answer: 0, why: "w" },
+      ],
+    },
+    ["a.ts"]
+  );
+  assert.equal(ex.questions[0].kind, "Failure case");
+  assert.equal(ex.questions[1].kind, undefined, "an unknown kind is dropped, not trusted");
+  assert.equal(ex.decisions.length, 2, "empty items are removed");
+  assert.equal(ex.decisions[1].length, 220, "items are length-limited");
+  assert.equal(ex.risks.length, 2, "risks are capped at two");
+  const old = validate({ summary: "s", questions: [{ q: "q", options: ["a", "b"], answer: 0, why: "w" }] }, []);
+  assert.deepEqual([old.decisions, old.depends, old.risks], [[], [], []], "older model output without the new fields still works");
+});
+
+test("toRecord sends the fingerprint and the answer, and the note only when summaries are shared", async () => {
+  const { toRecord } = await load("team.js");
+  const l = lesson({ id: "l_9", revs: { "a.ts": "abc123def456" }, response: "clarify", note: "unclear: the retry path", summary: "Adds retries." });
+  const scores = toRecord(l, "scores");
+  assert.deepEqual(scores.revs, { "a.ts": "abc123def456" });
+  assert.equal(scores.response, "clarify");
+  assert.equal(scores.openQuestions, undefined);
+  assert.equal(scores.summary, undefined);
+  const shared = toRecord(l, "summaries");
+  assert.deepEqual(shared.openQuestions, ["unclear: the retry path"]);
+  assert.equal(shared.summary, "Adds retries.");
+  const bare = toRecord(lesson({ id: "l_8" }), "scores");
+  assert.equal("revs" in bare, false, "a lesson without fingerprints sends none (older lessons stay valid)");
+  assert.equal("response" in bare, false);
+});
+
+test("fileRevs fingerprints files as they are on disk and skips missing ones", async () => {
+  const { fileRevs } = await load("git.js");
+  const { execFileSync } = await import("node:child_process");
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "zl-revs-"));
+  execFileSync("git", ["init", "-q"], { cwd: repo });
+  fs.writeFileSync(path.join(repo, "a.txt"), "one\n");
+  const first = fileRevs(repo, ["a.txt", "missing.txt"]);
+  assert.deepEqual(Object.keys(first), ["a.txt"]);
+  assert.match(first["a.txt"], /^[a-f0-9]{12}$/);
+  assert.equal(fileRevs(repo, ["a.txt"])["a.txt"], first["a.txt"], "same content, same fingerprint");
+  fs.writeFileSync(path.join(repo, "a.txt"), "two\n");
+  assert.notEqual(fileRevs(repo, ["a.txt"])["a.txt"], first["a.txt"], "changed content, new fingerprint");
+});

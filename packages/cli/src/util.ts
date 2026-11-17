@@ -114,3 +114,24 @@ export function mask(secret: string | undefined): string {
 export function fail(message: string, code = 1, hint?: string): never {
   throw new CliError(message, code, hint);
 }
+
+/** One visible line from a terminal (for yes/no questions). */
+export async function askLine(prompt: string): Promise<string> {
+  const rl = (await import("node:readline/promises")).createInterface({ input: process.stdin, output: process.stderr });
+  try {
+    return await rl.question(prompt);
+  } finally {
+    rl.close();
+  }
+}
+
+/** What zlearn sends to the developer's own model provider, in plain words. Shown at init and once for older installs. */
+export function aiDisclosure(provider: string, maxFiles: number): string {
+  return [
+    "What zlearn sends, and where:",
+    `  - To ${provider}, using your own API key: the diff of the files your agent changed (new files in full), up to ${maxFiles} files and about 60 KB per lesson.`,
+    "  - Nowhere else. Your team, and zevqi.com, never receive code, diffs, explanations or questions.",
+    "  - If you join a team: file paths, a content fingerprint, your score and your own answer. Summaries and notes only if you turn on sharing.",
+    "  - Do not use zlearn on repositories whose code your provider agreement does not allow you to send to that provider.",
+  ].join("\n");
+}

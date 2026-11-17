@@ -1,6 +1,6 @@
 import readline from "node:readline/promises";
 import { loadProject } from "./config.js";
-import { complete, listLessons, type Lesson } from "./lessons.js";
+import { complete, listLessons, RESPONSES, setResponse, type Lesson, type Response } from "./lessons.js";
 import { maybeNudge } from "./nudge.js";
 import { bar, computeStats } from "./stats.js";
 import { pushRecords, toRecord } from "./team.js";
@@ -12,6 +12,12 @@ export function printLesson(lesson: Lesson) {
   console.log("\n" + c.bold(c.cyan("What your agent changed")));
   console.log(lesson.summary + "\n");
   for (const f of lesson.files) console.log(`  ${c.bold(f.path)}\n    ${c.dim(f.note)}`);
+  const section = (title: string, items?: string[]) => {
+    if (items?.length) console.log(`\n${c.bold(title)}\n${items.map((x) => `  - ${x}`).join("\n")}`);
+  };
+  section("Decisions in the code", lesson.decisions);
+  section("It depends on", lesson.depends);
+  section("What could break", lesson.risks);
 }
 
 /** Interactive terminal quiz. Returns the completed lesson. */
@@ -28,10 +34,12 @@ export async function runQuiz(root: string, lesson: Lesson): Promise<Lesson> {
     return next.done ? null : String(next.value);
   };
   let correct = 0;
+  let response: Response | undefined;
+  let note: string | undefined;
   try {
     for (let i = 0; i < lesson.questions.length; i++) {
       const q = lesson.questions[i];
-      console.log(`\n${c.bold(`${i + 1}. ${q.q}`)}`);
+      console.log(`\n${c.bold(`${i + 1}. ${q.q}`)}${q.kind ? c.dim(`  [${q.kind}]`) : ""}`);
       q.options.forEach((o, n) => console.log(`   ${LETTERS[n]}) ${o}`));
       let pick = -1;
       while (pick < 0) {
@@ -48,12 +56,24 @@ export async function runQuiz(root: string, lesson: Lesson): Promise<Lesson> {
         console.log(c.red(`   Not quite. Answer: ${LETTERS[q.answer]}. `) + c.dim(q.why));
       }
     }
+    // The developer's own call. A score is not the same as understanding, so they can say "not yet" and it will not count as evidence.
+    const call = await ask(c.dim("\nDo you feel you understand this change? [Y]es / [c]larification needed / [i]nvestigate further (Enter = yes): "));
+    if (call !== null) {
+      const key = call.trim().toLowerCase()[0] || "y";
+      response = RESPONSES[key] ?? "understood";
+      if (response !== "understood") note = (await ask(c.dim("What is unclear? One line, optional: "))) ?? undefined;
+    }
   } finally {
     rl.close();
   }
-  const done = complete(root, lesson, correct, cfg.passRatio);
+  let done = complete(root, lesson, correct, cfg.passRatio);
+  if (response) done = setResponse(root, done, response, note);
   console.log("\n" + (done.status === "passed" ? c.green(`Passed ${correct}/${done.total}.`) : c.yellow(`${correct}/${done.total}. Re-read the summary, then run zlearn learn again.`)));
-  printProgress(before, computeStats(listLessons(root)), done.status === "passed");
+  if (response && response !== "understood") {
+    console.log(c.yellow("Noted. This will not count as evidence of understanding for your team until you follow up."));
+    console.log(c.dim(`When you have looked into it, run: zlearn review ${done.changedFiles[0] ?? "<file>"}`));
+  }
+  printProgress(before, computeStats(listLessons(root)), done.status === "passed" && response !== "clarify" && response !== "investigate");
   await syncLesson(done, cfg.share);
   maybeNudge(root);
   return done;

@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { explainDiff, AiError } from "./ai.js";
 import { loadProject, projectDir } from "./config.js";
-import { canonicalPath, diffForFiles, repoName, repoRoot } from "./git.js";
+import { canonicalPath, diffForFiles, fileRevs, repoName, repoRoot } from "./git.js";
 import { listLessons, newLessonId, pending, recordEdit, saveLesson, takeBuffer, type Lesson } from "./lessons.js";
 import { pushRecords, toRecord } from "./team.js";
 import { readJson, readStdin, toPosix, uid, writeJson } from "./util.js";
@@ -81,6 +81,11 @@ export async function explainJob(root: string, jobId: string): Promise<Lesson | 
     summary: explanation.summary,
     questions: explanation.questions,
     status: "pending",
+    kind: "change",
+    revs: fileRevs(root, included),
+    decisions: explanation.decisions,
+    depends: explanation.depends,
+    risks: explanation.risks,
   };
   saveLesson(root, lesson);
   await pushRecords([toRecord(lesson, cfg.share)]);

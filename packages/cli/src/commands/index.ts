@@ -1,12 +1,12 @@
 import { c } from "../util.js";
 import type { Command, CommandGroup } from "../context.js";
 import { config, doctor, gate, init, uninstall } from "./setup.js";
-import { explain, learn, stats, status, ui } from "./daily.js";
+import { explain, learn, review, stats, status, ui } from "./daily.js";
 import { team } from "./team.js";
 import { check } from "./check.js";
 import { hook } from "./hook.js";
 
-export const COMMANDS: Command[] = [init, uninstall, config, doctor, learn, explain, status, stats, ui, gate, team, check, hook];
+export const COMMANDS: Command[] = [init, uninstall, config, doctor, learn, review, explain, status, stats, ui, gate, team, check, hook];
 
 export function findCommand(name: string): Command | undefined {
   return COMMANDS.find((cmd) => cmd.name === name || cmd.aliases?.includes(name));

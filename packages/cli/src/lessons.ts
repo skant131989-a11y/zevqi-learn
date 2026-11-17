@@ -17,7 +17,21 @@ export type Lesson = {
   correct?: number;
   total?: number;
   completedAt?: string;
+  /** "change": the agent's own edits. "review": recent committed changes the developer chose to review (a teammate's, or their own from earlier). */
+  kind?: "change" | "review";
+  /** Content fingerprint (git blob hash, shortened) of each file when the lesson was made. Lets the team server tell when a file changed after a review. */
+  revs?: Record<string, string>;
+  decisions?: string[];
+  depends?: string[];
+  risks?: string[];
+  /** The developer's own call after the quiz. "clarify" and "investigate" do not count as evidence of understanding. */
+  response?: Response;
+  /** What is unclear, in the developer's words. Only synced when sharing is set to summaries. */
+  note?: string;
 };
+
+export type Response = "understood" | "clarify" | "investigate";
+export const RESPONSES: Record<string, Response> = { y: "understood", c: "clarify", i: "investigate" };
 
 export type Buffer = { sessionId?: string; files: Record<string, string> };
 
@@ -76,6 +90,13 @@ export function pending(root: string): Lesson[] {
 export function complete(root: string, lesson: Lesson, correct: number, passRatio: number): Lesson {
   const total = lesson.questions.length;
   const next: Lesson = { ...lesson, correct, total, status: total > 0 && correct / total >= passRatio - 1e-9 ? "passed" : "failed", completedAt: new Date().toISOString() };
+  saveLesson(root, next);
+  return next;
+}
+
+/** Records how the developer felt about a finished lesson. */
+export function setResponse(root: string, lesson: Lesson, response: Response, note?: string): Lesson {
+  const next: Lesson = { ...lesson, response, ...(note ? { note: note.replace(/\s+/g, " ").trim().slice(0, 300) } : {}) };
   saveLesson(root, next);
   return next;
 }

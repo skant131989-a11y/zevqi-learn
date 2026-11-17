@@ -92,6 +92,55 @@ export function diffForFiles(root: string, files: string[]): { text: string; inc
   return { text: parts.join("\n"), included };
 }
 
+/**
+ * Content fingerprint (git blob hash, 12 hex characters) of each file as it is on disk right now. The team server compares these
+ * to learn whether a file changed after someone reviewed it. Unreadable or deleted files are left out.
+ */
+export function fileRevs(root: string, files: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of files) {
+    try {
+      const h = git(root, ["hash-object", "--", f]).trim();
+      if (/^[a-f0-9]{40,64}$/.test(h)) out[f] = h.slice(0, 12);
+    } catch {
+      // deleted or unreadable: no fingerprint
+    }
+  }
+  return out;
+}
+
+/**
+ * The recent history of some files as patches: the last `commits` commits that touched each file, plus any uncommitted change.
+ * Used by `zlearn review`, so a developer can understand changes they did not write (or wrote long ago). Truncated for the AI call.
+ */
+export function diffForHistory(root: string, files: string[], commits = 5): { text: string; included: string[] } {
+  const parts: string[] = [];
+  const included: string[] = [];
+  let total = 0;
+  for (const file of files) {
+    if (total >= TOTAL) break;
+    const rel = toPosix(path.relative(root, path.resolve(root, file)));
+    if (rel.startsWith("..")) continue;
+    let chunk = "";
+    try {
+      if (hasHead(root)) chunk += git(root, ["diff", "HEAD", "--", rel]);
+    } catch {
+      // ignore
+    }
+    try {
+      chunk += git(root, ["log", "-p", "--no-color", `-n${commits}`, "--format=commit %h %an: %s", "--", rel]);
+    } catch {
+      // ignore
+    }
+    if (!chunk.trim()) continue;
+    if (chunk.length > PER_FILE * 2) chunk = chunk.slice(0, PER_FILE * 2) + "\n[... truncated ...]\n";
+    parts.push(`### ${rel}\n${chunk}`);
+    included.push(rel);
+    total += chunk.length;
+  }
+  return { text: parts.join("\n"), included };
+}
+
 /** Files with uncommitted changes (modified, staged or untracked), for a manual `zlearn explain`. */
 export function changedFiles(root: string): string[] {
   const out = new Set<string>();

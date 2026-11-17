@@ -19,6 +19,8 @@ export type ProjectConfig = {
   share: Share; // what leaves your machine for the team dashboard
   passRatio: number; // share of correct answers needed to pass a lesson
   maxFiles: number;
+  /** When the developer was shown what is sent to their model provider (ISO time). */
+  aiNotice?: string;
 };
 
 export const DEFAULT_PROJECT: ProjectConfig = { gate: "warn", share: "scores", passRatio: 2 / 3, maxFiles: 12 };

@@ -163,13 +163,13 @@ test("zlearn check reports risky files, honours --fail-on, and fails soft on out
       }
       const body = JSON.parse(raw);
       asked.push(body);
-      const status = { "src/risky.ts": ["blind", 0, true, 90], "src/solo.ts": ["single", 1, false, 40], "src/ok.ts": ["covered", 3, false, 5] };
+      const status = { "src/risky.ts": ["blind", 0, true, "high", "Nobody on the team has passed a lesson on this file yet."], "src/solo.ts": ["single", 1, false, "low", "Only Priya has current review evidence for this file."], "src/ok.ts": ["covered", 3, false, "none"], "src/new.ts": ["stale", 0, false, "medium", "Changed 2 days ago, after Ana's last passing lesson."] };
       const files = body.files.map((p) => {
-        const [s, owners, unreviewed, risk] = status[p] ?? ["unknown", 0, false, 0];
-        return { path: p, status: s, owners, unreviewed, risk, lastChange: null };
+        const [s, owners, unreviewed, level, why] = status[p] ?? ["unknown", 0, false, "none"];
+        return { path: p, status: s, owners, unreviewed, level, reasons: why ? [why] : [], lastChange: null };
       });
       const count = (f) => files.filter(f).length;
-      res.end(JSON.stringify({ team: { name: "Acme" }, files, totals: { files: files.length, unreviewed: count((f) => f.unreviewed), blind: count((f) => f.status === "blind"), single: count((f) => f.status === "single"), covered: count((f) => f.status === "covered"), unknown: count((f) => f.status === "unknown") } }));
+      res.end(JSON.stringify({ team: { name: "Acme" }, files, totals: { files: files.length, unreviewed: count((f) => f.unreviewed), blind: count((f) => f.status === "blind"), stale: count((f) => f.status === "stale"), single: count((f) => f.status === "single"), covered: count((f) => f.status === "covered"), unknown: count((f) => f.status === "unknown") } }));
     });
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -196,11 +196,15 @@ test("zlearn check reports risky files, honours --fail-on, and fails soft on out
   assert.match(report.stdout, /src\/risky\.ts/);
   assert.match(report.stdout, /un-reviewed AI change/);
   assert.match(report.stdout, /src\/solo\.ts/);
+  assert.match(report.stdout, /src\/new\.ts[^\n]*reviewed, but changed since/, "an out-of-date review is called out");
+  assert.match(report.stdout, /Changed 2 days ago, after Ana/, "the reason the server gave is shown");
+  assert.match(report.stdout, /1 out of date/);
   assert.doesNotMatch(report.stdout, /src\/ok\.ts/, "covered files are not listed");
   assert.deepEqual(asked[0].files.sort(), ["src/new.ts", "src/ok.ts", "src/risky.ts", "src/solo.ts"], "sends exactly the files the branch changed");
 
   assert.equal((await runAsync(["check", "--base", "main", "--fail-on", "unreviewed"], env, repo)).status, 1, "un-reviewed AI change fails the gate");
   assert.equal((await runAsync(["check", "--base", "main", "--fail-on", "blind"], env, repo)).status, 1, "a blind spot fails the blind policy");
+  assert.equal((await runAsync(["check", "--files", "src/new.ts", "--fail-on", "blind"], env, repo)).status, 1, "a file reviewed once but changed since also has no current evidence");
   assert.equal((await runAsync(["check", "--files", "src/ok.ts,src/solo.ts", "--fail-on", "unreviewed"], env, repo)).status, 0, "clean files pass");
   assert.equal((await runAsync(["check", "--fail-on", "sometimes"], env, repo)).status, 2, "bad policy is a usage error");
 

@@ -1,6 +1,6 @@
 {
   "name": "zevqi-learn",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Understand the code your AI agent writes, as fast as it writes it. Claude Code hooks, quizzes, streaks and a team dashboard.",
   "type": "module",
   "bin": {

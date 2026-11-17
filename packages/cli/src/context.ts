@@ -1,7 +1,7 @@
 import fs from "node:fs";
-import { projectDir } from "./config.js";
+import { loadProject, projectDir, providerOf, loadGlobal, saveProject } from "./config.js";
 import { repoRoot } from "./git.js";
-import { fail } from "./util.js";
+import { aiDisclosure, c, fail } from "./util.js";
 
 export type Flags = Record<string, string | true>;
 
@@ -46,4 +46,12 @@ export function needEnabled(): string {
 export function emit(ctx: Context, data: unknown, human: () => void): void {
   if (ctx.json) console.log(JSON.stringify(data, null, 2));
   else human();
+}
+
+/** Installs from before the disclosure existed see it once, then it is recorded. Never blocks. */
+export function ensureAiNotice(root: string): void {
+  const cfg = loadProject(root);
+  if (cfg.aiNotice) return;
+  console.log(c.dim(aiDisclosure(providerOf(loadGlobal()), cfg.maxFiles)) + "\n");
+  saveProject(root, { ...cfg, aiNotice: new Date().toISOString() });
 }

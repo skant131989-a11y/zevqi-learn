@@ -1,6 +1,9 @@
 import path from "node:path";
 import { loadProject, projectDir } from "../config.js";
-import { changedFiles } from "../git.js";
+import { changedFiles, diffForHistory, fileRevs, repoName } from "../git.js";
+import { explainDiff } from "../ai.js";
+import { newLessonId, saveLesson, type Lesson } from "../lessons.js";
+import { pushRecords, toRecord } from "../team.js";
 import { AiError, explainJob, hooksInstalled } from "../hooks.js";
 import { getLesson, knowledgeMap, listLessons, pending } from "../lessons.js";
 import { maybeNudge } from "../nudge.js";
@@ -8,7 +11,7 @@ import { runQuiz } from "../quiz.js";
 import { startServer } from "../server.js";
 import { bar, computeStats } from "../stats.js";
 import { c, fail, timeAgo, uid, writeJson } from "../util.js";
-import { emit, flagStr, needEnabled, needRoot, type Command } from "../context.js";
+import { emit, ensureAiNotice, flagStr, needEnabled, needRoot, type Command } from "../context.js";
 
 export const explain: Command = {
   name: "explain",
@@ -28,6 +31,7 @@ export const explain: Command = {
       return;
     }
     const root = needEnabled();
+    ensureAiNotice(root);
     const files = changedFiles(root);
     if (files.length === 0) return void console.log("No uncommitted changes to explain.");
     const jobId = uid("job_");
@@ -58,6 +62,52 @@ export const learn: Command = {
     await runQuiz(root, lesson);
     const left = pending(root).length;
     if (left) console.log(c.dim(`${left} more waiting. Run zlearn learn again.`));
+  },
+};
+
+export const review: Command = {
+  name: "review",
+  group: "Daily use",
+  summary: "Review recent committed changes to files (a teammate's, or your own from earlier) and add your evidence",
+  usage: "zlearn review <file...> [--commits 5]",
+  examples: [
+    "zlearn review src/payments/refund.ts",
+    "zlearn review src/auth/session.ts src/auth/tokens.ts --commits 3",
+  ],
+  async run(ctx) {
+    const root = needEnabled();
+    ensureAiNotice(root);
+    const wanted = ctx.args.map((f) => f.trim()).filter(Boolean);
+    if (wanted.length === 0) fail("Name the files to review.", 2, "Example: zlearn review src/payments/refund.ts");
+    const commits = Math.max(1, Math.min(20, Number(flagStr(ctx.flags.commits)) || 5));
+    const cfg = loadProject(root);
+    const files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(root, path.resolve(process.cwd(), f)).split(path.sep).join("/"));
+    const { text, included } = diffForHistory(root, files, commits);
+    if (!text.trim()) return void console.log("No git history found for those files. Check the paths, and that the changes are committed.");
+    console.log(c.dim(`Reading the last ${commits} commit${commits === 1 ? "" : "s"} for ${included.length} file${included.length === 1 ? "" : "s"}…`));
+    try {
+      const explanation = await explainDiff(text, included, repoName(root), "review");
+      const lesson: Lesson = {
+        id: newLessonId(),
+        createdAt: new Date().toISOString(),
+        repo: repoName(root),
+        files: explanation.files,
+        changedFiles: included,
+        summary: explanation.summary,
+        questions: explanation.questions,
+        status: "pending",
+        kind: "review",
+        revs: fileRevs(root, included),
+        decisions: explanation.decisions,
+        depends: explanation.depends,
+        risks: explanation.risks,
+      };
+      saveLesson(root, lesson);
+      await pushRecords([toRecord(lesson, cfg.share)]);
+      await runQuiz(root, lesson);
+    } catch (e) {
+      fail(e instanceof AiError ? e.message : String(e));
+    }
   },
 };
 

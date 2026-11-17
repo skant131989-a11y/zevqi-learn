@@ -13,8 +13,8 @@ export function resolveTeam(): { server: string; key: string } | null {
   return t ? { server: t.server, key: t.key } : null;
 }
 
-export type CheckFile = { path: string; status: "unknown" | "blind" | "single" | "covered"; owners: number; unreviewed: boolean; risk: number; lastChange: string | null };
-export type CheckResult = { team: { name: string }; files: CheckFile[]; totals: { files: number; unreviewed: number; blind: number; single: number; covered: number; unknown: number } };
+export type CheckFile = { path: string; status: "unknown" | "blind" | "stale" | "single" | "covered"; owners: number; unreviewed: boolean; level: "none" | "low" | "medium" | "high"; reasons: string[]; lastChange: string | null };
+export type CheckResult = { team: { name: string }; files: CheckFile[]; totals: { files: number; unreviewed: number; blind: number; stale?: number; single: number; covered: number; unknown: number } };
 
 /** Ask the team server which of these files have AI changes nobody has understood. */
 export async function checkFiles(files: string[], repo: string): Promise<CheckResult | { error: string; setup?: boolean }> {
@@ -37,6 +37,9 @@ export type RecordPayload = {
   createdAt: string;
   completedAt: string | null;
   summary?: string;
+  revs?: Record<string, string>;
+  response?: "understood" | "clarify" | "investigate";
+  openQuestions?: string[];
 };
 
 const outbox = () => path.join(globalDir(), "outbox.json");
@@ -51,7 +54,10 @@ export function toRecord(lesson: Lesson, share: Share): RecordPayload {
     total: lesson.total ?? lesson.questions.length,
     createdAt: lesson.createdAt,
     completedAt: lesson.completedAt ?? null,
-    ...(share === "summaries" ? { summary: lesson.summary } : {}),
+    ...(lesson.revs && Object.keys(lesson.revs).length ? { revs: lesson.revs } : {}),
+    ...(lesson.response ? { response: lesson.response } : {}),
+    // What is unclear is the developer's own text about the code, so it leaves the machine only when they chose to share summaries.
+    ...(share === "summaries" ? { summary: lesson.summary, ...(lesson.note ? { openQuestions: [lesson.note] } : {}) } : {}),
   };
 }
 

@@ -6,12 +6,15 @@ import { emit, flagStr, needRoot, type Command } from "../context.js";
 
 type FailOn = "none" | "unreviewed" | "blind";
 
-const ICON: Record<CheckFile["status"], string> = { blind: "✗", single: "!", covered: "✓", unknown: "·" };
+const ICON: Record<CheckFile["status"], string> = { blind: "✗", stale: "✗", single: "!", covered: "✓", unknown: "·" };
+const RANK = { high: 3, medium: 2, low: 1, none: 0 } as const;
+const rank = (f: CheckFile) => RANK[f.level ?? "none"] ?? 0;
+const reason = (f: CheckFile) => f.reasons?.[0];
 
 /** Does this file break the chosen policy? */
 function violates(f: CheckFile, failOn: FailOn): boolean {
   if (failOn === "unreviewed") return f.unreviewed;
-  if (failOn === "blind") return f.status === "blind";
+  if (failOn === "blind") return f.status === "blind" || f.status === "stale"; // no current evidence: never reviewed, or changed since
   return false;
 }
 
@@ -51,11 +54,12 @@ export const check: Command = {
 
     emit(ctx, { ...result, failOn, failed: bad.length > 0 }, () => {
       console.log(`${c.bold("zlearn check")} · ${result.team.name} · ${t.files} changed file${t.files === 1 ? "" : "s"}`);
-      for (const f of interesting.sort((a, b) => Number(b.unreviewed) - Number(a.unreviewed) || b.risk - a.risk)) {
-        const tag = f.unreviewed ? c.red("un-reviewed AI change") : f.status === "blind" ? c.red("no one understands this") : c.yellow("only one person understands this");
+      for (const f of interesting.sort((a, b) => Number(b.unreviewed) - Number(a.unreviewed) || rank(b) - rank(a))) {
+        const tag = f.unreviewed ? c.red("un-reviewed AI change") : f.status === "blind" ? c.red("never reviewed") : f.status === "stale" ? c.red("reviewed, but changed since") : c.yellow("only one person has reviewed this");
         console.log(`  ${f.status === "blind" || f.unreviewed ? c.red(ICON[f.status]) : c.yellow(ICON[f.status])} ${f.path}  ${c.dim("·")} ${tag}`);
+        if (reason(f)) console.log(`      ${c.dim(reason(f)!)}`);
       }
-      console.log(`${c.dim(`${t.covered} covered · ${t.single} one owner · ${t.blind} blind · ${t.unreviewed} un-reviewed · ${t.unknown} not AI-changed`)}`);
+      console.log(`${c.dim(`${t.covered} covered · ${t.single} one reviewer · ${t.blind} never reviewed · ${t.stale ?? 0} out of date · ${t.unreviewed} un-reviewed · ${t.unknown} not AI-changed`)}`);
       if (bad.length) console.log(c.red(`\n✗ ${bad.length} file${bad.length === 1 ? " breaks" : "s break"} the "${failOn}" policy. Run zlearn learn and pass the lessons, then push again.`));
       else console.log(c.green(`\n✓ ${failOn === "none" ? "Report only" : `Passes the "${failOn}" policy`}.`));
     });
@@ -64,14 +68,14 @@ export const check: Command = {
     if (process.env.GITHUB_ACTIONS === "true" && !ctx.json) {
       for (const f of interesting) {
         const level = violates(f, failOn) ? "error" : "warning";
-        const msg = f.unreviewed ? "AI-written change has not been reviewed by anyone on the team" : f.status === "blind" ? "No one on the team has passed a lesson on this file" : "Only one person understands this file";
+        const msg = reason(f) ?? (f.unreviewed ? "AI-written change has not been reviewed by anyone on the team" : f.status === "blind" ? "No one on the team has passed a lesson on this file" : "Only one person has reviewed this file");
         console.log(`::${level} file=${f.path}::${msg}`);
       }
     }
     const summaryFile = process.env.GITHUB_STEP_SUMMARY;
     if (summaryFile) {
-      const rows = interesting.map((f) => `| \`${f.path}\` | ${f.unreviewed ? "un-reviewed AI change" : f.status === "blind" ? "no owner" : "one owner"} | ${f.risk} |`).join("\n");
-      const md = `### zlearn check\n\n**${t.files}** changed file(s): ${t.covered} covered, ${t.single} one owner, ${t.blind} blind spots, ${t.unreviewed} un-reviewed.\n\n${interesting.length ? `| File | Status | Risk |\n|---|---|---|\n${rows}\n` : "Nothing needs attention.\n"}\n${bad.length ? `**Failed** the \`${failOn}\` policy.\n` : ""}`;
+      const rows = interesting.map((f) => `| \`${f.path}\` | ${f.unreviewed ? "un-reviewed AI change" : f.status === "blind" ? "never reviewed" : f.status === "stale" ? "out of date" : "one reviewer"} | ${f.level ?? ""} | ${reason(f) ?? ""} |`).join("\n");
+      const md = `### zlearn check\n\n**${t.files}** changed file(s): ${t.covered} covered, ${t.single} one reviewer, ${t.blind} never reviewed, ${t.stale ?? 0} out of date, ${t.unreviewed} un-reviewed.\n\n${interesting.length ? `| File | Evidence | Level | Why |\n|---|---|---|---|\n${rows}\n` : "Nothing needs attention.\n"}\n${bad.length ? `**Failed** the \`${failOn}\` policy.\n` : ""}`;
       try {
         fs.appendFileSync(summaryFile, md);
       } catch {

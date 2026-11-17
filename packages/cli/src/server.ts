@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import { loadProject } from "./config.js";
-import { complete, getLesson, knowledgeMap, listLessons, type Lesson } from "./lessons.js";
+import { complete, getLesson, knowledgeMap, listLessons, setResponse, type Lesson, type Response } from "./lessons.js";
 import { syncLesson } from "./quiz.js";
 import { escapeHtml as h, timeAgo } from "./util.js";
 
@@ -18,6 +18,7 @@ nav{display:flex;gap:14px;margin:10px 0 22px}nav a{color:var(--slate);text-decor
 button{border:0;border-radius:99px;background:var(--violet);color:#fff;font-weight:700;padding:10px 20px;cursor:pointer;font-size:15px}
 label.opt{display:block;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;cursor:pointer;background:#fff}
 label.opt:hover{border-color:var(--violet)}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
+.kind{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;margin-right:6px;text-transform:uppercase;letter-spacing:.04em}ul.pts{margin:6px 0 0;padding-left:20px}.pts li{margin:3px 0}textarea,input[type=text]{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit}
 .bar{height:8px;border-radius:99px;background:#e3e5ea;overflow:hidden}.bar i{display:block;height:100%;background:var(--lime)}
 `;
 
@@ -48,8 +49,9 @@ function home(root: string, token: string): string {
 
 function lessonPage(l: Lesson, token: string): string {
   const files = l.files.map((f) => `<tr><td><code>${h(f.path)}</code></td><td>${h(f.note)}</td></tr>`).join("");
+  const points = (title: string, items?: string[]) => (items?.length ? `<h2 style="margin-top:14px;font-size:15px">${h(title)}</h2><ul class="pts">${items.map((x) => `<li>${h(x)}</li>`).join("")}</ul>` : "");
   const qs = l.questions
-    .map((q, i) => `<div class="card"><b>${i + 1}. ${h(q.q)}</b>${q.options.map((o, n) => `<label class="opt"><input type="radio" name="q${i}" value="${n}" ${l.status !== "pending" ? "disabled" : ""}> ${h(o)}</label>`).join("")}<div class="muted why" id="why${i}"></div></div>`)
+    .map((q, i) => `<div class="card">${q.kind ? `<span class="kind">${h(q.kind)}</span>` : ""}<b>${i + 1}. ${h(q.q)}</b>${q.options.map((o, n) => `<label class="opt"><input type="radio" name="q${i}" value="${n}" ${l.status !== "pending" ? "disabled" : ""}> ${h(o)}</label>`).join("")}<div class="muted why" id="why${i}"></div></div>`)
     .join("");
   const script = `
 const id=${JSON.stringify(l.id)},token=${JSON.stringify(token)},answers=${JSON.stringify(l.questions.map((q) => q.answer))},whys=${JSON.stringify(l.questions.map((q) => q.why))};
@@ -57,11 +59,11 @@ document.getElementById('go').onclick=async()=>{
  const picks=answers.map((_,i)=>{const r=document.querySelector('input[name=q'+i+']:checked');return r?Number(r.value):-1});
  if(picks.includes(-1)){alert('Answer every question first.');return}
  let correct=0;picks.forEach((p,i)=>{const ok=p===answers[i];if(ok)correct++;document.getElementById('why'+i).innerHTML=(ok?'✅ Correct. ':'❌ Not quite. ')+whys[i]});
- const r=await fetch('/api/answer?t='+token,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,correct})});
+ const r=await fetch('/api/answer?t='+token,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,correct,response:(document.querySelector('input[name=call]:checked')||{}).value||'understood',note:(document.getElementById('note')||{}).value||''})});
  const j=await r.json();document.getElementById('result').textContent=j.status==='passed'?'Passed '+correct+'/'+answers.length+'.':correct+'/'+answers.length+'. Re-read the summary and try again from the terminal: zlearn learn';
  document.getElementById('go').disabled=true};`;
-  return page("Lesson", `<p><a href="/?t=${token}">← All lessons</a></p><div class="card">${badge(l)} <span class="muted">${h(timeAgo(l.createdAt))}</span><h2 style="margin-top:8px">What changed</h2><p>${h(l.summary)}</p><table>${files}</table></div>
-<h2>Quick check</h2>${qs}${l.status === "pending" ? `<p><button id="go">Check my answers</button></p><p id="result" class="muted"></p><script>${script}</script>` : `<p class="muted">Already completed.</p>`}`, "", token);
+  return page("Lesson", `<p><a href="/?t=${token}">← All lessons</a></p><div class="card">${badge(l)} <span class="muted">${h(timeAgo(l.createdAt))}</span><h2 style="margin-top:8px">What changed</h2><p>${h(l.summary)}</p><table>${files}</table>${points("Decisions in the code", l.decisions)}${points("It depends on", l.depends)}${points("What could break", l.risks)}</div>
+<h2>Quick check</h2>${qs}${l.status === "pending" ? `<div class="card" id="callbox"><b>Do you feel you understand this change?</b><p class="muted" style="margin:4px 0 8px">A score is not the same as understanding. If you are not sure, say so. It will not count as evidence for your team until you follow up.</p><label class="opt"><input type="radio" name="call" value="understood" checked> Yes, I understand it</label><label class="opt"><input type="radio" name="call" value="clarify"> I need clarification</label><label class="opt"><input type="radio" name="call" value="investigate"> I need to investigate further</label><input type="text" id="note" maxlength="300" placeholder="What is unclear? Optional" style="margin-top:6px"></div><p><button id="go">Check my answers</button></p><p id="result" class="muted"></p><script>${script}</script>` : `<p class="muted">Already completed.</p>`}`, "", token);
 }
 
 function mapPage(root: string, token: string): string {
@@ -93,11 +95,12 @@ export function startServer(root: string, port: number, onReady: (url: string) =
       req.on("data", (d) => (raw += d));
       req.on("end", async () => {
         try {
-          const { id, correct } = JSON.parse(raw) as { id: string; correct: number };
+          const { id, correct, response, note } = JSON.parse(raw) as { id: string; correct: number; response?: string; note?: string };
           const lesson = getLesson(root, id);
           if (!lesson || lesson.status !== "pending") return send(404, "application/json", JSON.stringify({ error: "not found" }));
           const cfg = loadProject(root);
-          const done = complete(root, lesson, Math.max(0, Math.min(lesson.questions.length, Number(correct) || 0)), cfg.passRatio);
+          let done = complete(root, lesson, Math.max(0, Math.min(lesson.questions.length, Number(correct) || 0)), cfg.passRatio);
+          if (response === "understood" || response === "clarify" || response === "investigate") done = setResponse(root, done, response as Response, typeof note === "string" ? note : undefined);
           await syncLesson(done, cfg.share);
           send(200, "application/json", JSON.stringify({ status: done.status }));
         } catch {

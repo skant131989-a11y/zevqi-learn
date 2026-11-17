@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { apiKey, ensureGitignore, globalConfigPath, loadGlobal, loadProject, projectDir, providerOf, saveGlobal, saveProject, type Gate } from "../config.js";
 import { repoRoot } from "../git.js";
 import { hooksInstalled, installHooks, settingsPath, uninstallHooks } from "../hooks.js";
-import { c, fail, mask, readSecret } from "../util.js";
+import { aiDisclosure, askLine, c, fail, mask, readSecret } from "../util.js";
 import { emit, flagStr, needEnabled, needRoot, type Command, type Context } from "../context.js";
 
 const scopeOf = (ctx: Context) => (ctx.flags.global ? "global" : ctx.flags.shared ? "shared" : "local");
@@ -12,13 +12,21 @@ export const init: Command = {
   name: "init",
   group: "Setup",
   summary: "Turn zlearn on in this repo (installs the Claude Code hooks)",
-  usage: "zlearn init [--shared | --global] [--gate off|warn|block] [--no-prompt]",
+  usage: "zlearn init [--shared | --global] [--gate off|warn|block] [--no-prompt | --yes]",
   examples: ["zlearn init", "zlearn init --shared --gate block"],
   async run(ctx) {
     const root = needRoot();
     const gate = flagStr(ctx.flags.gate);
     if (gate && !GATES.includes(gate as Gate)) fail(`--gate must be one of: ${GATES.join(", ")}`, 2);
-    saveProject(root, { ...loadProject(root), ...(gate ? { gate: gate as Gate } : {}) });
+    const existing = loadProject(root);
+    if (!existing.aiNotice) {
+      console.log(c.bold(aiDisclosure(providerOf(loadGlobal()), existing.maxFiles)) + "\n");
+      if (process.stdin.isTTY && !ctx.flags["no-prompt"] && !ctx.flags.yes) {
+        const answer = await askLine("Continue? [Y/n] ");
+        if (/^n/i.test(answer.trim())) fail("Nothing was installed.", 1, "Run zlearn init again when you are ready.");
+      }
+    }
+    saveProject(root, { ...existing, ...(gate ? { gate: gate as Gate } : {}), aiNotice: existing.aiNotice ?? new Date().toISOString() });
     ensureGitignore(root);
     const file = installHooks(root, scopeOf(ctx), ctx.cliPath);
     console.log(`${c.green("✓")} zlearn is on. Hooks added to ${c.dim(file)}`);

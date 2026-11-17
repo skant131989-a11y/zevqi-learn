@@ -4,7 +4,20 @@ All notable changes to zlearn. Versions follow [semver](https://semver.org).
 
 ## Unreleased
 
+## 0.3.0
+
 ### Added
+- **Evidence, not just scores.** After the questions, zlearn asks "Do you feel you understand this change?" with three answers: understood, need clarification, need further investigation. Only "understood" counts as evidence for your team. A short note on what is unclear stays on your machine unless you set `share` to `summaries`. The local `zlearn ui` page has the same choice.
+- **Content fingerprints.** Each lesson records a git blob hash for every file, and syncs it. The team server uses it to tell when a file changed after someone reviewed it, so old reviews expire instead of counting forever. No code is sent.
+- `zlearn review <file...> [--commits 5]`: review the recent committed changes to files, such as a teammate's, and add your own evidence. This is how a second person covers a file.
+- Better lessons: questions are tagged (Why, Failure case, Assumption, Dependency) and the explanation lists decisions in the code, what it depends on and what could break.
+- A plain-language disclosure of what is sent to your model provider, shown by `zlearn init` (and once, without blocking, for older installs). `--yes` or `--no-prompt` skips the confirmation.
+- `zlearn check` shows out-of-date files (reviewed once, changed since) and the reason for each flag. `--fail-on blind` now also fails on out-of-date files.
+
+### Changed
+- Older team servers still work. A lesson without fingerprints or an answer is treated as before.
+
+### Added (earlier, unreleased)
 - `zlearn check`: a pull-request gate. Lists the files a branch changes and asks the team server which have AI changes nobody has understood. `--fail-on unreviewed|blind`, GitHub annotations and job summary, `ZLEARN_TEAM_KEY` for CI, soft-fails on outages unless `--strict`.
 
 ### Fixed
