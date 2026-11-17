@@ -4,6 +4,11 @@ All notable changes to zlearn. Versions follow [semver](https://semver.org).
 
 ## Unreleased
 
+## 0.4.1
+
+### Changed
+- **Honest wording for author ids.** `zlearn scan` now says it shares *pseudonymous* author ids, not anonymous ones. They are a short one-way hash of the author's email: no email or name can be read back out, but anyone who already has a list of candidate emails could hash them and compare. What is sent is unchanged. The `--dry-run` output, the setup disclosure and the README use the new wording.
+
 ## 0.4.0
 
 ### Added
