@@ -2,7 +2,7 @@
 
 **Understand the code your AI agent writes, as fast as it writes it.**
 
-[![CI](https://github.com/skant131989-a11y/zevqi-learn/actions/workflows/ci.yml/badge.svg)](https://github.com/skant131989-a11y/zevqi-learn/actions/workflows/ci.yml)
+[![CI](https://github.com/zevqi/zlearn/actions/workflows/ci.yml/badge.svg)](https://github.com/zevqi/zlearn/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 ![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 
@@ -35,8 +35,8 @@ Passed 3/3.
 Requires Node 20+ and git. The package is not on npm yet, so run it from source:
 
 ```bash
-git clone https://github.com/skant131989-a11y/zevqi-learn
-cd zevqi-learn && npm install && npm run build:cli
+git clone https://github.com/zevqi/zlearn
+cd zlearn && npm install && npm run build:cli
 npm link -w zevqi-learn        # makes the `zlearn` command available
 ```
 
@@ -125,7 +125,7 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: git clone --depth 1 https://github.com/skant131989-a11y/zevqi-learn /tmp/zlearn && cd /tmp/zlearn && npm ci && npm run build:cli
+      - run: git clone --depth 1 https://github.com/zevqi/zlearn /tmp/zlearn && cd /tmp/zlearn && npm ci && npm run build:cli
       - run: node /tmp/zlearn/packages/cli/dist/cli.js check --base origin/${{ github.base_ref }} --fail-on unreviewed
         env:
           ZLEARN_TEAM_KEY: ${{ secrets.ZLEARN_TEAM_KEY }}

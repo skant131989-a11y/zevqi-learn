@@ -7,8 +7,8 @@ Thanks for helping. This is a small, focused codebase, so changes are quick to r
 Requires Node 20+ and git.
 
 ```bash
-git clone https://github.com/skant131989-a11y/zevqi-learn
-cd zevqi-learn
+git clone https://github.com/zevqi/zlearn
+cd zlearn
 npm install
 npm test
 ```
