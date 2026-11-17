@@ -35,12 +35,12 @@ Passed 3/3.
 Requires Node 20+ and git. In your project folder, with your team key (from your team admin or your Zevqi dashboard), one paste does everything: installs zlearn, joins your team, turns it on in this repository and uploads your first knowledge map. It works in macOS, Linux and Windows PowerShell.
 
 ```bash
-npm install -g github:zevqi/zlearn; zlearn setup --key <your-team-key>
+npm install -g zlearn-cli; zlearn setup --key <your-team-key>
 ```
 
 No team? Install it, then `zlearn init` and `zlearn scan --dry-run` to see what a scan finds. Nothing is sent anywhere. No API key is needed for any of this.
 
-Prefer to build it from source? The package is not on npm yet:
+Prefer to read and build it yourself? The npm package is [`zlearn-cli`](https://www.npmjs.com/package/zlearn-cli), and you can also install straight from GitHub with `npm install -g github:zevqi/zlearn`, or build from source:
 
 ```bash
 git clone https://github.com/zevqi/zlearn
