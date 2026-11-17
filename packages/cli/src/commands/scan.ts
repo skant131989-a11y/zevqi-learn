@@ -6,7 +6,7 @@ import { emit, flagStr, needRoot, type Command } from "../context.js";
 
 /**
  * `zlearn scan`: a map of who has changed which files, from git history. It needs no model, no API key and no setup by your
- * teammates. Only counts, dates and anonymous author ids leave your machine: no code, no commit messages, no emails.
+ * teammates. Only counts, dates and pseudonymous author ids leave your machine: no code, no commit messages, no emails.
  */
 export const scan: Command = {
   name: "scan",
@@ -56,7 +56,7 @@ export const scan: Command = {
     emit(ctx, { uploaded: true, ...res, summary: s }, () => {
       printSummary(s);
       console.log(`\n${c.green("✓")} Uploaded ${res.saved} files and ${res.people} people to your team dashboard (Knowledge map).`);
-      console.log(c.dim(`Shared: paths, commit counts, dates and anonymous author ids${names ? ", and author names" : ""}. Not shared: code, commit messages, emails.`));
+      console.log(c.dim(`Shared: paths, commit counts, dates and pseudonymous author ids${names ? ", and author names" : ""}. Not shared: code, commit messages, emails.`));
       console.log(`See your knowledge map: ${c.cyan(`${team.server.replace(/\/$/, "")}/account`)}`);
     });
   },

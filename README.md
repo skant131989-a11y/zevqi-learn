@@ -89,7 +89,7 @@ Every hook always exits successfully, so zlearn can never break your session.
 |---|---|
 | `zlearn init [--shared\|--global] [--gate off\|warn\|block]` | Turn it on in this repo and install the hooks. |
 | `zlearn setup --key <teamKey> [--email <you>]` | One command: join your team, turn zlearn on here, and upload the first knowledge map. |
-| `zlearn scan [--months 12] [--names] [--dry-run]` | Map who holds the knowledge of each file from git history. No model, no key. Shares counts, dates and anonymous author ids, never code, messages or emails. |
+| `zlearn scan [--months 12] [--names] [--dry-run]` | Map who holds the knowledge of each file from git history. No model, no key. Shares counts, dates and pseudonymous author ids, never code, messages or emails. |
 | `zlearn lesson add` | Save a lesson your coding agent wrote (JSON on stdin), so no key is needed. |
 | `zlearn learn [id]` | Take the quiz for the oldest un-reviewed change, then say whether you understand it. |
 | `zlearn review <file...> [--commits 5]` | Review the recent committed changes to files (a teammate's, or your own from earlier) and add your own evidence. |
@@ -151,7 +151,7 @@ Policies: `--fail-on none` (default, report only), `unreviewed` (fail if a chang
 ## Privacy
 
 - **With no API key, no code is sent anywhere.** If you add one, the diff of the changed files goes only to the AI provider you configure, under your own account, and `zlearn init` says so first. Code is never sent to a zlearn server.
-- **`zlearn scan` sends** file paths, commit counts, first and last change dates, how many commits carry an AI co-author mark, and authors as anonymous ids (a hash of the email, not the email). Author names only with `--names`. Never code, commit messages or emails. `zlearn scan --dry-run` shows the exact payload and sends nothing.
+- **`zlearn scan` sends** file paths, commit counts, first and last change dates, how many commits carry an AI co-author mark, and authors as pseudonymous ids (a hash of the email, not the email). Author names only with `--names`. Never code, commit messages or emails. `zlearn scan --dry-run` shows the exact payload and sends nothing.
 - **The team server only receives** file paths, a content fingerprint of each file (a git blob hash, so it can tell when a file changed), lesson ids, scores, your own answer (understood or needs clarification), timestamps and your name and email. Summaries and the note about what is unclear are shared only if you set `share` to `summaries` in `.zlearn/config.json`.
 - **`zlearn init` tells you exactly what goes to your model provider** before it installs anything: the diff of the files your agent changed (new files in full, about 60 KB per lesson). Do not use zlearn on code your provider agreement does not allow you to send.
 - **No telemetry.** The CLI makes no analytics calls.

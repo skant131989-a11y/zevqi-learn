@@ -135,7 +135,7 @@ export function aiDisclosure(provider: string, maxFiles: number, keyed = true): 
       "What zlearn sends, and where:",
       "  - No API key is set, so nothing is sent to any model provider.",
       "  - Nowhere else. Your team, and zevqi.com, never receive code, diffs, explanations or questions.",
-      "  - If you join a team: file paths, a content fingerprint, your own answer, and for zlearn scan commit counts and anonymous author ids. Summaries and notes only if you turn on sharing.",
+      "  - If you join a team: file paths, a content fingerprint, your own answer, and for zlearn scan commit counts and pseudonymous author ids. Summaries and notes only if you turn on sharing.",
       `  - If you add an API key later, the diff of the files your agent changed (new files in full, up to ${maxFiles} files and about 60 KB per lesson) goes to that provider under your own account, and you will be told first.`,
     ].join("\n");
   }
