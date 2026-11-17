@@ -33,3 +33,8 @@ jobs:
         run: npm run typecheck -w zevqi-learn
       - name: Test (unit, CLI contract, end-to-end with mock AI and real git)
         run: npm test
+      - name: The committed build matches the source
+        if: runner.os == 'Linux' && matrix.node == 22
+        run: |
+          npm run build:cli
+          git diff --exit-code -- packages/cli/dist || (echo "packages/cli/dist is out of date. Run: npm run build:cli, then commit it." && exit 1)

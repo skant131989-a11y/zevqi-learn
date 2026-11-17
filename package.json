@@ -7,8 +7,7 @@
   ],
   "scripts": {
     "build:cli": "npm run build -w zevqi-learn",
-    "test": "npm run test -w zevqi-learn",
-    "prepare": "node scripts/build.mjs"
+    "test": "npm run test -w zevqi-learn"
   },
   "description": "Understand the code your AI agent writes. Command-line tool for zlearn by Zevqi.",
   "bin": {
@@ -27,9 +26,5 @@
     "type": "git",
     "url": "git+https://github.com/zevqi/zlearn.git"
   },
-  "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
-  }
+  "license": "MIT"
 }
