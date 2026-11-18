@@ -77,7 +77,7 @@ test("hooks -> lesson -> gate -> quiz", async (t) => {
   // 1. init installs hooks, creates config, ignores .zlearn
   const init = run(["init", "--gate", "warn"], { cwd: repo, env });
   assert.equal(init.status, 0, init.stderr);
-  assert.match(init.stdout, /What zlearn sends/, "init says plainly what goes to the model provider");
+  assert.match(init.stdout, /What Zevqi sends/, "init says plainly what goes to the model provider");
   assert.match(init.stdout, /Nowhere else/);
   assert.ok(JSON.parse(fs.readFileSync(path.join(repo, ".zlearn", "config.json"), "utf8")).aiNotice, "the disclosure is recorded");
   const settings = JSON.parse(fs.readFileSync(path.join(repo, ".claude", "settings.local.json"), "utf8"));
@@ -139,7 +139,7 @@ test("hooks -> lesson -> gate -> quiz", async (t) => {
   assert.equal(quiz.status, 0, quiz.stderr);
   assert.match(quiz.stdout, /Passed 2\/3/);
   assert.match(quiz.stdout, /will not count as evidence/);
-  assert.match(quiz.stdout, /zlearn review src\/greet\.js/);
+  assert.match(quiz.stdout, /zevqi review src\/greet\.js/);
   const done = JSON.parse(fs.readFileSync(path.join(lessonsDir, lessonFile), "utf8"));
   assert.equal(done.status, "passed");
   assert.equal(done.correct, 2);
@@ -217,7 +217,7 @@ test("review: a teammate's committed change becomes a lesson, and the evidence r
   fs.writeFileSync(cfgPath, JSON.stringify(legacy));
   const firstRun = await runAsync(["review", "src/pay.js"], { cwd: repo, env, input: "a\nA\nA\ny\n" });
   assert.equal(firstRun.status, 0, firstRun.stderr);
-  assert.match(firstRun.stdout, /What zlearn sends/, "older installs are told once");
+  assert.match(firstRun.stdout, /What Zevqi sends/, "older installs are told once");
   assert.ok(JSON.parse(fs.readFileSync(cfgPath, "utf8")).aiNotice);
   fs.rmSync(path.join(repo, ".zlearn", "lessons"), { recursive: true, force: true });
   records.length = 0;
@@ -225,7 +225,7 @@ test("review: a teammate's committed change becomes a lesson, and the evidence r
   // scores only (the default): the fingerprint and the answer are sent, but not the developer's own words
   let out = await runAsync(["review", "src/pay.js", "--commits", "2"], { cwd: repo, env, input: "a\nA\nA\ni\nnot sure about the failure path\n" });
   assert.equal(out.status, 0, out.stderr);
-  assert.doesNotMatch(out.stdout, /What zlearn sends/, "the disclosure is shown once, not every time");
+  assert.doesNotMatch(out.stdout, /What Zevqi sends/, "the disclosure is shown once, not every time");
   assert.match(ai.calls.lastBody, /recent committed changes/, "the model is told these are committed changes being reviewed");
   assert.match(ai.calls.lastBody, /validate amount/, "the commit history of the file is what gets explained");
   const lessons = fs.readdirSync(path.join(repo, ".zlearn", "lessons")).map((f) => JSON.parse(fs.readFileSync(path.join(repo, ".zlearn", "lessons", f), "utf8")));

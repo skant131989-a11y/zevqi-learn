@@ -68,10 +68,10 @@ export async function runQuiz(root: string, lesson: Lesson): Promise<Lesson> {
   }
   let done = complete(root, lesson, correct, cfg.passRatio);
   if (response) done = setResponse(root, done, response, note);
-  console.log("\n" + (done.status === "passed" ? c.green(`Passed ${correct}/${done.total}.`) : c.yellow(`${correct}/${done.total}. Re-read the summary, then run zlearn learn again.`)));
+  console.log("\n" + (done.status === "passed" ? c.green(`Passed ${correct}/${done.total}.`) : c.yellow(`${correct}/${done.total}. Re-read the summary, then run zevqi learn again.`)));
   if (response && response !== "understood") {
     console.log(c.yellow("Noted. This will not count as evidence of understanding for your team until you follow up."));
-    console.log(c.dim(`When you have looked into it, run: zlearn review ${done.changedFiles[0] ?? "<file>"}`));
+    console.log(c.dim(`When you have looked into it, run: zevqi review ${done.changedFiles[0] ?? "<file>"}`));
   }
   printProgress(before, computeStats(listLessons(root)), done.status === "passed" && response !== "clarify" && response !== "investigate");
   await syncLesson(done, cfg.share);

@@ -19,11 +19,11 @@ export const check = {
     name: "check",
     group: "Teams",
     summary: "Pull-request gate: which changed files have AI changes nobody has understood",
-    usage: "zlearn check [--base <ref>] [--files a.ts,b.ts] [--fail-on none|unreviewed|blind] [--strict] [--json]",
+    usage: "zevqi check [--base <ref>] [--files a.ts,b.ts] [--fail-on none|unreviewed|blind] [--strict] [--json]",
     examples: [
-        "zlearn check --base origin/main",
-        "zlearn check --base origin/main --fail-on unreviewed     # exit 1 if a changed file has un-reviewed AI changes",
-        "ZLEARN_TEAM_KEY=zlt_… zlearn check --fail-on blind       # in CI, no `team join` needed",
+        "zevqi check --base origin/main",
+        "zevqi check --base origin/main --fail-on unreviewed     # exit 1 if a changed file has un-reviewed AI changes",
+        "ZEVQI_TEAM_KEY=zlt_… zevqi check --fail-on blind       # in CI, no `team join` needed",
     ],
     async run(ctx) {
         const failOn = (flagStr(ctx.flags["fail-on"]) ?? "none");
@@ -40,8 +40,8 @@ export const check = {
         if ("error" in result) {
             // An outage or a missing key should not silently pass a strict gate, but it must not break a normal pipeline either.
             if (result.setup)
-                fail(result.error, 2, "Set ZLEARN_TEAM_KEY (and ZLEARN_SERVER if you self-host), or run: zlearn team join");
-            console.error(c.yellow(`zlearn check skipped: ${result.error}`));
+                fail(result.error, 2, "Set ZEVQI_TEAM_KEY (and ZEVQI_SERVER if you self-host), or run: zevqi team join");
+            console.error(c.yellow(`zevqi check skipped: ${result.error}`));
             if (strict)
                 process.exitCode = 3;
             return;
@@ -50,7 +50,7 @@ export const check = {
         const interesting = result.files.filter((f) => f.status !== "covered" && f.status !== "unknown");
         const t = result.totals;
         emit(ctx, { ...result, failOn, failed: bad.length > 0 }, () => {
-            console.log(`${c.bold("zlearn check")} · ${result.team.name} · ${t.files} changed file${t.files === 1 ? "" : "s"}`);
+            console.log(`${c.bold("zevqi check")} · ${result.team.name} · ${t.files} changed file${t.files === 1 ? "" : "s"}`);
             for (const f of interesting.sort((a, b) => Number(b.unreviewed) - Number(a.unreviewed) || rank(b) - rank(a))) {
                 const tag = f.unreviewed ? c.red("un-reviewed AI change") : f.status === "blind" ? c.red("never reviewed") : f.status === "stale" ? c.red("reviewed, but changed since") : c.yellow("only one person has reviewed this");
                 console.log(`  ${f.status === "blind" || f.unreviewed ? c.red(ICON[f.status]) : c.yellow(ICON[f.status])} ${f.path}  ${c.dim("·")} ${tag}`);
@@ -59,7 +59,7 @@ export const check = {
             }
             console.log(`${c.dim(`${t.covered} covered · ${t.single} one reviewer · ${t.blind} never reviewed · ${t.stale ?? 0} out of date · ${t.unreviewed} un-reviewed · ${t.unknown} not AI-changed`)}`);
             if (bad.length)
-                console.log(c.red(`\n✗ ${bad.length} file${bad.length === 1 ? " breaks" : "s break"} the "${failOn}" policy. Run zlearn learn and pass the lessons, then push again.`));
+                console.log(c.red(`\n✗ ${bad.length} file${bad.length === 1 ? " breaks" : "s break"} the "${failOn}" policy. Run zevqi learn and pass the lessons, then push again.`));
             else
                 console.log(c.green(`\n✓ ${failOn === "none" ? "Report only" : `Passes the "${failOn}" policy`}.`));
             const server = resolveTeam()?.server;
@@ -77,7 +77,7 @@ export const check = {
         const summaryFile = process.env.GITHUB_STEP_SUMMARY;
         if (summaryFile) {
             const rows = interesting.map((f) => `| \`${f.path}\` | ${f.unreviewed ? "un-reviewed AI change" : f.status === "blind" ? "never reviewed" : f.status === "stale" ? "out of date" : "one reviewer"} | ${f.level ?? ""} | ${reason(f) ?? ""} |`).join("\n");
-            const md = `### zlearn check\n\n**${t.files}** changed file(s): ${t.covered} covered, ${t.single} one reviewer, ${t.blind} never reviewed, ${t.stale ?? 0} out of date, ${t.unreviewed} un-reviewed.\n\n${interesting.length ? `| File | Evidence | Level | Why |\n|---|---|---|---|\n${rows}\n` : "Nothing needs attention.\n"}\n${bad.length ? `**Failed** the \`${failOn}\` policy.\n` : ""}`;
+            const md = `### zevqi check\n\n**${t.files}** changed file(s): ${t.covered} covered, ${t.single} one reviewer, ${t.blind} never reviewed, ${t.stale ?? 0} out of date, ${t.unreviewed} un-reviewed.\n\n${interesting.length ? `| File | Evidence | Level | Why |\n|---|---|---|---|\n${rows}\n` : "Nothing needs attention.\n"}\n${bad.length ? `**Failed** the \`${failOn}\` policy.\n` : ""}`;
             try {
                 fs.appendFileSync(summaryFile, md);
             }

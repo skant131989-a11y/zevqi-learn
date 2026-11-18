@@ -111,7 +111,7 @@ export function fileRevs(root: string, files: string[]): Record<string, string> 
 
 /**
  * The recent history of some files as patches: the last `commits` commits that touched each file, plus any uncommitted change.
- * Used by `zlearn review`, so a developer can understand changes they did not write (or wrote long ago). Truncated for the AI call.
+ * Used by `zevqi review`, so a developer can understand changes they did not write (or wrote long ago). Truncated for the AI call.
  */
 export function diffForHistory(root: string, files: string[], commits = 5): { text: string; included: string[] } {
   const parts: string[] = [];
@@ -141,7 +141,7 @@ export function diffForHistory(root: string, files: string[], commits = 5): { te
   return { text: parts.join("\n"), included };
 }
 
-/** Raw history for `zlearn scan`: one record per non-merge commit with its author, date, subject, body and changed files. */
+/** Raw history for `zevqi scan`: one record per non-merge commit with its author, date, subject, body and changed files. */
 export function scanLog(root: string, months = 12, maxCommits = 30000): string {
   try {
     return git(root, ["-c", "core.quotepath=off", "log", "--no-merges", `--since=${months}.months`, `-n${maxCommits}`, "--name-only", "--format=%x1e%H%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%b%x1f"]);
@@ -169,7 +169,7 @@ export function filesInCommit(root: string, ref = "HEAD"): string[] {
   }
 }
 
-/** Files with uncommitted changes (modified, staged or untracked), for a manual `zlearn explain`. */
+/** Files with uncommitted changes (modified, staged or untracked), for a manual `zevqi explain`. */
 export function changedFiles(root: string): string[] {
   const out = new Set<string>();
   const run = (args: string[]) => {

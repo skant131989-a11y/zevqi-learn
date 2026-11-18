@@ -1,8 +1,18 @@
 # Changelog
 
-All notable changes to zlearn. Versions follow [semver](https://semver.org).
+All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https://semver.org).
 
 ## Unreleased
+
+## 0.5.0
+
+### Changed
+- **The product is now called Zevqi.** The npm package is `zevqi` and the command is `zevqi`: `npm install -g zevqi; zevqi setup --key <your-team-key>`. The old name was shared by several unrelated products, which made this one hard to find.
+- **`zlearn` still works.** The package installs both commands, `zevqi` and `zlearn`, and they run the same program. Nothing you set up with 0.4.x stops working.
+- Everything the tool prints says Zevqi and shows `zevqi …` commands.
+- **Settings:** `ZEVQI_TEAM_KEY`, `ZEVQI_SERVER`, `ZEVQI_API_KEY`, `ZEVQI_PROVIDER`, `ZEVQI_MODEL`, `ZEVQI_HOME` and `ZEVQI_NO_NUDGE` are accepted. The older `ZLEARN_*` names keep working, and the new name wins if both are set.
+- **Unchanged on purpose:** the `.zlearn/` folder (so existing lessons stay where they are) and the markers and `zlearn lesson add` line in the `AGENTS.md` block, so a teammate on an older version can still read what 0.5 wrote.
+- The old package `zlearn-cli` is deprecated and points here.
 
 ## 0.4.1
 

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** The version in package.json, so `zlearn --version` can never drift from the published package. */
+/** The version in package.json, so `zevqi --version` can never drift from the published package. */
 function readVersion(): string {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));

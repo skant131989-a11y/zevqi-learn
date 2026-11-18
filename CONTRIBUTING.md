@@ -1,4 +1,4 @@
-# Contributing to zlearn
+# Contributing to Zevqi
 
 Thanks for helping. This is a small, focused codebase, so changes are quick to review.
 

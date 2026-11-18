@@ -38,7 +38,7 @@ export function needRoot(): string {
 
 export function needEnabled(): string {
   const root = needRoot();
-  if (!fs.existsSync(projectDir(root))) fail("zlearn is not enabled here yet.", 2, "Run: zlearn init");
+  if (!fs.existsSync(projectDir(root))) fail("Zevqi is not enabled here yet.", 2, "Run: zevqi init");
   return root;
 }
 

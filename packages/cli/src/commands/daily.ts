@@ -19,9 +19,9 @@ export const explain: Command = {
   name: "explain",
   group: "Daily use",
   summary: "Explain your current uncommitted changes now",
-  usage: "zlearn explain",
+  usage: "zevqi explain",
   async run(ctx) {
-    // Internal: the Stop hook launches `zlearn explain --job <id> --root <dir>` as a detached background process.
+    // Internal: the Stop hook launches `zevqi explain --job <id> --root <dir>` as a detached background process.
     const job = flagStr(ctx.flags.job);
     if (job) {
       const root = flagStr(ctx.flags.root) ?? needRoot();
@@ -42,7 +42,7 @@ export const explain: Command = {
     try {
       const lesson = await explainJob(root, jobId);
       if (!lesson) return void console.log("Nothing to explain.");
-      console.log(`${c.green("✓")} Lesson ready. Run: ${c.bold("zlearn learn")}`);
+      console.log(`${c.green("✓")} Lesson ready. Run: ${c.bold("zevqi learn")}`);
     } catch (e) {
       fail(e instanceof AiError ? e.message : String(e));
     }
@@ -54,7 +54,7 @@ export const learn: Command = {
   aliases: ["quiz"],
   group: "Daily use",
   summary: "Take the quiz for the oldest un-reviewed change",
-  usage: "zlearn learn [lessonId]",
+  usage: "zevqi learn [lessonId]",
   async run(ctx) {
     const root = needEnabled();
     const open = pending(root).reverse();
@@ -63,7 +63,7 @@ export const learn: Command = {
     if (!lesson) return void console.log(id ? "No such lesson." : `${c.green("✓")} Nothing waiting. You are up to date.`);
     await runQuiz(root, lesson);
     const left = pending(root).length;
-    if (left) console.log(c.dim(`${left} more waiting. Run zlearn learn again.`));
+    if (left) console.log(c.dim(`${left} more waiting. Run zevqi learn again.`));
   },
 };
 
@@ -71,16 +71,16 @@ export const review: Command = {
   name: "review",
   group: "Daily use",
   summary: "Review recent committed changes to files (a teammate's, or your own from earlier) and add your evidence",
-  usage: "zlearn review <file...> [--commits 5] [--no-ai]",
+  usage: "zevqi review <file...> [--commits 5] [--no-ai]",
   examples: [
-    "zlearn review src/payments/refund.ts",
-    "zlearn review src/auth/session.ts src/auth/tokens.ts --commits 3",
+    "zevqi review src/payments/refund.ts",
+    "zevqi review src/auth/session.ts src/auth/tokens.ts --commits 3",
   ],
   async run(ctx) {
     const root = needEnabled();
     ensureAiNotice(root);
     const wanted = ctx.args.map((f) => f.trim()).filter(Boolean);
-    if (wanted.length === 0) fail("Name the files to review.", 2, "Example: zlearn review src/payments/refund.ts");
+    if (wanted.length === 0) fail("Name the files to review.", 2, "Example: zevqi review src/payments/refund.ts");
     const commits = Math.max(1, Math.min(20, Number(flagStr(ctx.flags.commits)) || 5));
     const cfg = loadProject(root);
     // Canonical paths on both sides: a Windows short name (RUNNER~1) or a symlinked cwd must not make a file look like it is outside the repo.
@@ -127,7 +127,7 @@ export const status: Command = {
   name: "status",
   group: "Daily use",
   summary: "What is waiting for review, and which files nobody has reviewed",
-  usage: "zlearn status [--json]",
+  usage: "zevqi status [--json]",
   run(ctx) {
     const root = needEnabled();
     const lessons = listLessons(root);
@@ -148,7 +148,7 @@ export const stats: Command = {
   name: "stats",
   group: "Daily use",
   summary: "Your streak, XP and level for this project",
-  usage: "zlearn stats [--json]",
+  usage: "zevqi stats [--json]",
   run(ctx) {
     const root = needEnabled();
     const s = computeStats(listLessons(root));
@@ -156,7 +156,7 @@ export const stats: Command = {
       console.log(`${c.bold(`Level ${s.level} · ${s.levelName}`)}   ${c.cyan(bar(s.levelProgress))}  ${s.xp} XP${s.xpToNext ? c.dim(`  (${s.xpToNext} to next level)`) : c.dim("  (top level)")}`);
       console.log(`${c.bold("Streak")}        ${s.streak > 0 ? c.yellow(`${s.streak} day${s.streak === 1 ? "" : "s"}`) : c.dim("none yet")}  ${c.dim(`best ${s.bestStreak}`)}`);
       console.log(`${c.bold("Understood")}    ${s.filesUnderstood} file${s.filesUnderstood === 1 ? "" : "s"} · ${s.passed} lesson${s.passed === 1 ? "" : "s"} passed · ${s.weekPassed} in the last 7 days`);
-      if (s.pending) console.log(c.dim(`${s.pending} lesson${s.pending === 1 ? "" : "s"} waiting. Run zlearn learn.`));
+      if (s.pending) console.log(c.dim(`${s.pending} lesson${s.pending === 1 ? "" : "s"} waiting. Run zevqi learn.`));
       else if (s.streak === 0) console.log(c.dim("Pass a lesson today to start a streak."));
     });
     maybeNudge(root, { json: ctx.json });
@@ -167,10 +167,10 @@ export const ui: Command = {
   name: "ui",
   group: "Daily use",
   summary: "Open the local dashboard in your browser",
-  usage: "zlearn ui [--port 4317]",
+  usage: "zevqi ui [--port 4317]",
   run(ctx) {
     const root = needEnabled();
     const port = Number(flagStr(ctx.flags.port)) || 4317;
-    startServer(root, port, (url) => console.log(`zlearn dashboard: ${c.cyan(url)}\n${c.dim("Press Ctrl+C to stop.")}`));
+    startServer(root, port, (url) => console.log(`zevqi dashboard: ${c.cyan(url)}\n${c.dim("Press Ctrl+C to stop.")}`));
   },
 };

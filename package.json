@@ -1,8 +1,9 @@
 {
-  "name": "zlearn-cli",
-  "version": "0.4.1",
-  "description": "Understand the code your AI agent writes. A knowledge map from git, attested reviews and a team dashboard. No API key needed.",
+  "name": "zevqi",
+  "version": "0.5.0",
+  "description": "Zevqi: understand the code your AI agent writes. A knowledge map from git, attested reviews and a team dashboard. No API key needed.",
   "keywords": [
+    "zevqi",
     "zlearn",
     "ai",
     "code-review",
@@ -25,6 +26,7 @@
   "license": "MIT",
   "author": "Neha Singh <hello@zevqi.com>",
   "bin": {
+    "zevqi": "packages/cli/dist/cli.js",
     "zlearn": "packages/cli/dist/cli.js"
   },
   "files": [

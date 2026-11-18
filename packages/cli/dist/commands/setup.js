@@ -10,9 +10,9 @@ const GATES = ["off", "warn", "block"];
 export const init = {
     name: "init",
     group: "Setup",
-    summary: "Turn zlearn on in this repo (installs the Claude Code hooks)",
-    usage: "zlearn init [--shared | --global] [--gate off|warn|block] [--agents | --no-agents] [--no-prompt | --yes]",
-    examples: ["zlearn init", "zlearn init --shared --gate block"],
+    summary: "Turn Zevqi on in this repo (installs the Claude Code hooks)",
+    usage: "zevqi init [--shared | --global] [--gate off|warn|block] [--agents | --no-agents] [--no-prompt | --yes]",
+    examples: ["zevqi init", "zevqi init --shared --gate block"],
     async run(ctx) {
         const root = needRoot();
         const gate = flagStr(ctx.flags.gate);
@@ -25,13 +25,13 @@ export const init = {
             if (apiKey(loadGlobal()) && process.stdin.isTTY && !ctx.flags["no-prompt"] && !ctx.flags.yes) {
                 const answer = await askLine("Continue? [Y/n] ");
                 if (/^n/i.test(answer.trim()))
-                    fail("Nothing was installed.", 1, "Run zlearn init again when you are ready.");
+                    fail("Nothing was installed.", 1, "Run zevqi init again when you are ready.");
             }
         }
         saveProject(root, { ...existing, ...(gate ? { gate: gate } : {}), aiNotice: existing.aiNotice ?? new Date().toISOString() });
         ensureGitignore(root);
         const file = installHooks(root, scopeOf(ctx), ctx.cliPath);
-        console.log(`${c.green("✓")} zlearn is on. Hooks added to ${c.dim(file)}`);
+        console.log(`${c.green("✓")} Zevqi is on. Hooks added to ${c.dim(file)}`);
         if (!apiKey(loadGlobal())) {
             if (process.stdin.isTTY && !ctx.flags["no-prompt"]) {
                 console.log("\nzlearn uses your own model key. It is stored on this machine only (owner-readable file).");
@@ -46,35 +46,35 @@ export const init = {
         if (ctx.flags.agents || (!apiKey(loadGlobal()) && !ctx.flags["no-agents"])) {
             const r = installAgentBlock(root);
             console.log(`${c.green("✓")} Your coding agent will write the lessons, so no API key is needed. Instructions ${r.agentsMd} in ${c.dim("AGENTS.md")}${r.claudeMd !== "none" ? `, import ${r.claudeMd} in ${c.dim("CLAUDE.md")}` : ""}.`);
-            console.log(c.dim("Commit those files so every agent on the project sees them. Works with Codex, Cursor and Claude Code. Prefer zlearn to explain changes itself? Run: zlearn config set apiKey"));
-            console.log(c.dim("Also no key needed: zlearn scan (who holds the knowledge of each file, from git) and zlearn review <file> (you describe a change in your own words)."));
+            console.log(c.dim("Commit those files so every agent on the project sees them. Works with Codex, Cursor and Claude Code. Prefer Zevqi to explain changes itself? Run: zevqi config set apiKey"));
+            console.log(c.dim("Also no key needed: zevqi scan (who holds the knowledge of each file, from git) and zevqi review <file> (you describe a change in your own words)."));
         }
-        console.log(c.dim("\nRestart Claude Code (or open /hooks) so it picks up the hooks. After your agent finishes a turn, run: zlearn learn"));
+        console.log(c.dim("\nRestart Claude Code (or open /hooks) so it picks up the hooks. After your agent finishes a turn, run: zevqi learn"));
     },
 };
 export const uninstall = {
     name: "uninstall",
     group: "Setup",
     summary: "Remove the hooks (your lessons stay in .zlearn/)",
-    usage: "zlearn uninstall [--shared | --global]",
+    usage: "zevqi uninstall [--shared | --global]",
     run(ctx) {
         const root = needRoot();
         const file = uninstallHooks(root, scopeOf(ctx));
         const removed = removeAgentBlock(root);
-        console.log(`Removed zlearn hooks from ${file}${removed.agentsMd ? ", and the lesson instructions from AGENTS.md" : ""}. Your lessons stay in ${projectDir(root)}.`);
+        console.log(`Removed zevqi hooks from ${file}${removed.agentsMd ? ", and the lesson instructions from AGENTS.md" : ""}. Your lessons stay in ${projectDir(root)}.`);
     },
 };
 export const gate = {
     name: "gate",
     group: "Daily use",
     summary: "What happens when you commit with un-reviewed AI changes",
-    usage: "zlearn gate <off|warn|block>",
-    examples: ["zlearn gate warn"],
+    usage: "zevqi gate <off|warn|block>",
+    examples: ["zevqi gate warn"],
     run(ctx) {
         const root = needEnabled();
         const mode = ctx.args[0];
         if (!GATES.includes(mode))
-            fail("Use: zlearn gate off|warn|block", 2);
+            fail("Use: zevqi gate off|warn|block", 2);
         saveProject(root, { ...loadProject(root), gate: mode });
         console.log(`Commit gate: ${c.bold(mode)}`);
     },
@@ -83,8 +83,8 @@ export const config = {
     name: "config",
     group: "Setup",
     summary: "Show or change settings (API key, provider, model)",
-    usage: "zlearn config show | zlearn config set <apiKey|provider|model|baseUrl> [value]",
-    examples: ["zlearn config show", "zlearn config set apiKey          # prompts, input hidden", "zlearn config set model claude-haiku-4-5-20251001"],
+    usage: "zevqi config show | zevqi config set <apiKey|provider|model|baseUrl> [value]",
+    examples: ["zevqi config show", "zevqi config set apiKey          # prompts, input hidden", "zevqi config set model claude-haiku-4-5-20251001"],
     async run(ctx) {
         const cfg = loadGlobal();
         const [sub, key, value] = ctx.args;
@@ -100,7 +100,7 @@ export const config = {
             if (!v && key === "apiKey")
                 v = await readSecret("API key (input hidden): ");
             if (!v)
-                fail(`Give a value: zlearn config set ${key} <value>`, 2);
+                fail(`Give a value: zevqi config set ${key} <value>`, 2);
             if (key === "provider" && !["anthropic", "openai"].includes(v))
                 fail("provider must be anthropic or openai", 2);
             cfg[key] = v;
@@ -108,14 +108,14 @@ export const config = {
             console.log(`${c.green("✓")} Saved ${key}${key === "apiKey" ? ` (${mask(v)})` : ""}.`);
             return;
         }
-        fail("Usage: zlearn config show | zlearn config set <key> [value]", 2);
+        fail("Usage: zevqi config show | zevqi config set <key> [value]", 2);
     },
 };
 export const doctor = {
     name: "doctor",
     group: "Setup",
     summary: "Check that everything is wired up",
-    usage: "zlearn doctor [--json]",
+    usage: "zevqi doctor [--json]",
     run(ctx) {
         const root = repoRoot(process.cwd());
         const cfg = loadGlobal();
@@ -124,13 +124,13 @@ export const doctor = {
         add(Number(process.versions.node.split(".")[0]) >= 20, `Node ${process.versions.node}`, "Node 20 or newer is required");
         add(Boolean(root), "Inside a git repository", "run this in your project");
         if (root) {
-            add(fs.existsSync(projectDir(root)), "zlearn enabled in this repo", "zlearn init");
+            add(fs.existsSync(projectDir(root)), "Zevqi enabled in this repo", "zevqi init");
             const where = hooksInstalled(root);
-            add(where.length > 0, `Claude Code hooks installed${where.length ? ` (${where.join(", ")})` : ""}`, "zlearn init");
+            add(where.length > 0, `Claude Code hooks installed${where.length ? ` (${where.join(", ")})` : ""}`, "zevqi init");
         }
         const agentMode = Boolean(root && agentBlockInstalled(root));
         // A key is optional: scan, attested review and agent-written lessons all work without one.
-        add(true, apiKey(cfg) ? `API key found (${providerOf(cfg)}), so zlearn can write questions itself` : agentMode ? "No API key: your coding agent writes lessons (AGENTS.md instructions installed)" : "No API key: zlearn scan and zlearn review work without one (add a key for AI-written questions)");
+        add(true, apiKey(cfg) ? `API key found (${providerOf(cfg)}), so Zevqi can write questions itself` : agentMode ? "No API key: your coding agent writes lessons (AGENTS.md instructions installed)" : "No API key: zevqi scan and zevqi review work without one (add a key for AI-written questions)");
         add(true, cfg.team ? `Team: ${cfg.team.server}` : "Team: not connected (optional)");
         emit(ctx, { ok: checks.every((x) => x.ok), checks }, () => {
             for (const x of checks)

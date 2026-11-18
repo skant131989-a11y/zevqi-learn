@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-// `zlearn scan`: a summary of git history per file. It needs no model and no developer action. Only counts, dates and pseudonymous
+// `zevqi scan`: a summary of git history per file. It needs no model and no developer action. Only counts, dates and pseudonymous
 // author ids leave the machine: never code, never commit messages, never email addresses.
 /** A commit that says an AI tool helped write it. Only some tools add such a mark, so this undercounts. */
 export const AI_MARK = /co-authored-by:[^\n]*\b(claude|anthropic|copilot|cursor|codex|openai|gemini|aider)\b|generated with \[?claude code|🤖 generated with/i;

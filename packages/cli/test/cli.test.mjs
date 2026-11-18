@@ -31,7 +31,7 @@ test("per-command help works both ways", () => {
     const r = run(args);
     assert.equal(r.status, 0);
     assert.match(r.stdout, /Usage/);
-    assert.match(r.stdout, /zlearn learn/);
+    assert.match(r.stdout, /zevqi learn/);
   }
 });
 
@@ -39,7 +39,7 @@ test("unknown command exits 2 and suggests the closest match", () => {
   const r = run(["lern"]);
   assert.equal(r.status, 2);
   assert.match(r.stderr, /Unknown command "lern"/);
-  assert.match(r.stderr, /Did you mean: zlearn learn/);
+  assert.match(r.stderr, /Did you mean: zevqi learn/);
 });
 
 test("commands that need a repo fail clearly outside git", () => {
@@ -149,8 +149,8 @@ test("team join rejects a bad key, accepts a good one, and tolerates an offline 
   assert.match(offline.stdout, /could not reach/);
 });
 
-// ── zlearn check (PR gate) ───────────────────────────────────────────────────────────────────────
-test("zlearn check reports risky files, honours --fail-on, and fails soft on outages", async (t) => {
+// ── zevqi check (PR gate) ───────────────────────────────────────────────────────────────────────
+test("zevqi check reports risky files, honours --fail-on, and fails soft on outages", async (t) => {
   const asked = [];
   const server = http.createServer((req, res) => {
     let raw = "";
@@ -189,7 +189,7 @@ test("zlearn check reports risky files, honours --fail-on, and fails soft on out
   git("add", "-A");
   git("commit", "-qm", "feature");
 
-  const env = { ZLEARN_HOME: home, ZLEARN_TEAM_KEY: "zlt_cikeycikeycikeycikey1234", ZLEARN_SERVER: url };
+  const env = { ZLEARN_HOME: home, ZEVQI_TEAM_KEY: "zlt_cikeycikeycikeycikey1234", ZLEARN_SERVER: url };
 
   const report = await runAsync(["check", "--base", "main"], env, repo);
   assert.equal(report.status, 0, report.stderr);
@@ -219,7 +219,7 @@ test("zlearn check reports risky files, honours --fail-on, and fails soft on out
 
   const noKey = await runAsync(["check", "--base", "main"], { ZLEARN_HOME: home }, repo);
   assert.equal(noKey.status, 2);
-  assert.match(noKey.stderr, /ZLEARN_TEAM_KEY/);
+  assert.match(noKey.stderr, /ZEVQI_TEAM_KEY/);
 
   const down = await runAsync(["check", "--base", "main", "--fail-on", "unreviewed"], { ...env, ZLEARN_SERVER: "http://127.0.0.1:1" }, repo);
   assert.equal(down.status, 0, "an outage must not break a normal pipeline");

@@ -12,7 +12,7 @@ export function needRoot() {
 export function needEnabled() {
     const root = needRoot();
     if (!fs.existsSync(projectDir(root)))
-        fail("zlearn is not enabled here yet.", 2, "Run: zlearn init");
+        fail("Zevqi is not enabled here yet.", 2, "Run: zevqi init");
     return root;
 }
 /** Print machine-readable JSON when `--json` is set, otherwise run the human renderer. */

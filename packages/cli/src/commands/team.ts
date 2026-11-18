@@ -11,36 +11,36 @@ export const team: Command = {
   group: "Teams",
   summary: "Share scores with your team (create, join, status, sync, leave)",
   usage: [
-    "zlearn team join   --server <url> --key <teamKey> --email <you> [--name <you>]",
-    "zlearn team status [--json]",
-    "zlearn team sync | leave",
-    "zlearn team create --server <url> --name <team> [--secret <s>]   (self-hosted servers)",
+    "zevqi team join   --server <url> --key <teamKey> --email <you> [--name <you>]",
+    "zevqi team status [--json]",
+    "zevqi team sync | leave",
+    "zevqi team create --server <url> --name <team> [--secret <s>]   (self-hosted servers)",
   ].join("\n       "),
-  examples: ["zlearn team join --server https://zevqi.com --key zlt_… --email you@company.com"],
+  examples: ["zevqi team join --server https://zevqi.com --key zlt_… --email you@company.com"],
   async run(ctx) {
     const sub = ctx.args[0];
     const url = server(ctx.flags);
 
     if (sub === "create") {
       const name = flagStr(ctx.flags.name);
-      if (!name) fail("Usage: zlearn team create --server <url> --name <team> [--secret <s>]", 2);
+      if (!name) fail("Usage: zevqi team create --server <url> --name <team> [--secret <s>]", 2);
       const res = await createTeam(url, name, flagStr(ctx.flags.secret)).catch((e: Error) => fail(e.message));
       console.log(c.green("Team created."));
       console.log(`  Team key (share with teammates, keep private): ${c.bold(res.teamKey)}`);
       console.log(`  Dashboard (admins only):                        ${c.cyan(res.dashboardUrl)}`);
-      console.log(c.dim(`  Teammates join with: zlearn team join --server ${url} --key ${res.teamKey} --email <their email>`));
+      console.log(c.dim(`  Teammates join with: zevqi team join --server ${url} --key ${res.teamKey} --email <their email>`));
       return;
     }
     if (sub === "join") {
       const key = flagStr(ctx.flags.key);
       const email = flagStr(ctx.flags.email);
-      if (!key || !email) fail("Usage: zlearn team join --server <url> --key <teamKey> --email <you> [--name <you>]", 2);
+      if (!key || !email) fail("Usage: zevqi team join --server <url> --key <teamKey> --email <you> [--name <you>]", 2);
       const check = await checkTeamKey(url, key);
       if (!check.ok && check.reason === "invalid") fail(check.message, 1, "Nothing was saved.");
       joinTeam(url, key, email, flagStr(ctx.flags.name));
       if (check.ok) {
         console.log(`${c.green("✓")} Joined ${check.teamName ? c.bold(check.teamName) : "the team"}. Results sync to ${url}. By default only scores and file names are shared, never code.`);
-        console.log(c.dim(`Next: zlearn scan (maps who holds the knowledge of each file) or zlearn setup (does it all in this repo).`));
+        console.log(c.dim(`Next: zevqi scan (maps who holds the knowledge of each file) or zevqi setup (does it all in this repo).`));
       }
       else console.log(`${c.yellow("!")} Saved, but could not reach ${url} just now (${check.message}). Lessons will queue locally and sync later.`);
       return;
@@ -67,6 +67,6 @@ export const team: Command = {
       });
       return;
     }
-    fail("Usage: zlearn team create|join|status|sync|leave", 2);
+    fail("Usage: zevqi team create|join|status|sync|leave", 2);
   },
 };

@@ -9,7 +9,7 @@ export const END = "<!-- zlearn:end -->";
 const IMPORT_START = "<!-- zlearn:import -->";
 const IMPORT_END = "<!-- zlearn:import-end -->";
 export const BLOCK = `${START}
-## zlearn: turn your changes into a lesson
+## Zevqi: turn your changes into a lesson
 
 When you finish a task that changed code, and the \`zlearn\` command is available, write a short lesson for the developer and save it. Skip this step if \`zlearn\` is not installed, or if you only changed documentation or formatting.
 

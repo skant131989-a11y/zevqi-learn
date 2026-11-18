@@ -22,8 +22,8 @@ label.opt:hover{border-color:var(--violet)}table{width:100%;border-collapse:coll
 `;
 function page(title, body, tab, token) {
     const tabs = [["", "Lessons"], ["map", "Knowledge map"]];
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${h(title)} · zlearn</title><style>${CSS}</style></head><body><main>
-<h1>zlearn</h1><div class="muted">Understand what your agent wrote.</div>
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${h(title)} · Zevqi</title><style>${CSS}</style></head><body><main>
+<h1>Zevqi</h1><div class="muted">Understand what your agent wrote.</div>
 <nav>${tabs.map(([p, l]) => `<a class="${tab === p ? "on" : ""}" href="/${p}?t=${token}">${l}</a>`).join("")}</nav>${body}</main></body></html>`;
 }
 function badge(l) {
@@ -56,7 +56,7 @@ document.getElementById('go').onclick=async()=>{
  if(picks.includes(-1)){alert('Answer every question first.');return}
  let correct=0;picks.forEach((p,i)=>{const ok=p===answers[i];if(ok)correct++;document.getElementById('why'+i).innerHTML=(ok?'✅ Correct. ':'❌ Not quite. ')+whys[i]});
  const r=await fetch('/api/answer?t='+token,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,correct,response:(document.querySelector('input[name=call]:checked')||{}).value||'understood',note:(document.getElementById('note')||{}).value||''})});
- const j=await r.json();document.getElementById('result').textContent=j.status==='passed'?'Passed '+correct+'/'+answers.length+'.':correct+'/'+answers.length+'. Re-read the summary and try again from the terminal: zlearn learn';
+ const j=await r.json();document.getElementById('result').textContent=j.status==='passed'?'Passed '+correct+'/'+answers.length+'.':correct+'/'+answers.length+'. Re-read the summary and try again from the terminal: zevqi learn';
  document.getElementById('go').disabled=true};`;
     return page("Lesson", `<p><a href="/?t=${token}">← All lessons</a></p><div class="card">${badge(l)} <span class="muted">${h(timeAgo(l.createdAt))}</span><h2 style="margin-top:8px">What changed</h2><p>${h(l.summary)}</p><table>${files}</table>${points("Decisions in the code", l.decisions)}${points("It depends on", l.depends)}${points("What could break", l.risks)}</div>
 <h2>Quick check</h2>${qs}${l.status === "pending" ? `<div class="card" id="callbox"><b>Do you feel you understand this change?</b><p class="muted" style="margin:4px 0 8px">A score is not the same as understanding. If you are not sure, say so. It will not count as evidence for your team until you follow up.</p><label class="opt"><input type="radio" name="call" value="understood" checked> Yes, I understand it</label><label class="opt"><input type="radio" name="call" value="clarify"> I need clarification</label><label class="opt"><input type="radio" name="call" value="investigate"> I need to investigate further</label><input type="text" id="note" maxlength="300" placeholder="What is unclear? Optional" style="margin-top:6px"></div><p><button id="go">Check my answers</button></p><p id="result" class="muted"></p><script>${script}</script>` : `<p class="muted">Already completed.</p>`}`, "", token);
@@ -80,7 +80,7 @@ export function startServer(root, port, onReady) {
             return;
         }
         if (url.searchParams.get("t") !== token) {
-            res.writeHead(403, { "content-type": "text/plain" }).end("Open the link printed by `zlearn ui`.");
+            res.writeHead(403, { "content-type": "text/plain" }).end("Open the link printed by `zevqi ui`.");
             return;
         }
         const send = (code, type, body) => res.writeHead(code, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff" }).end(body);

@@ -6,6 +6,7 @@ import { c, fail } from "../util.js";
 import { flagStr } from "../context.js";
 import { init } from "./setup.js";
 import { scan } from "./scan.js";
+import { envVar } from "../env.js";
 const gitEmail = () => {
     try {
         return execFileSync("git", ["config", "user.email"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || undefined;
@@ -17,20 +18,20 @@ const gitEmail = () => {
 /** The page a person lands on after setup. Signing in with an email code takes them to their dashboard. */
 export const dashboardUrl = (server) => `${server.replace(/\/$/, "")}/account`;
 /**
- * `zlearn setup`: the whole first run in one command. Joins the team, turns zlearn on in this repository and uploads the first
+ * `zevqi setup`: the whole first run in one command. Joins the team, turns Zevqi on in this repository and uploads the first
  * git knowledge map. Each step says what it did and what is next; a failing step never undoes the ones before it.
  */
 export const setup = {
     name: "setup",
     group: "Setup",
-    summary: "One command: join your team, turn zlearn on here, and scan this repository",
-    usage: "zlearn setup --key <teamKey> [--email <you>] [--server <url>] [--name <you>] [--names] [--skip-scan]",
-    examples: ["zlearn setup --key zlt_… --email you@company.com", "ZLEARN_TEAM_KEY=zlt_… zlearn setup      # the email comes from git config"],
+    summary: "One command: join your team, turn Zevqi on here, and scan this repository",
+    usage: "zevqi setup --key <teamKey> [--email <you>] [--server <url>] [--name <you>] [--names] [--skip-scan]",
+    examples: ["zevqi setup --key zlt_… --email you@company.com", "ZEVQI_TEAM_KEY=zlt_… zevqi setup      # the email comes from git config"],
     async run(ctx) {
-        const key = flagStr(ctx.flags.key) ?? process.env.ZLEARN_TEAM_KEY ?? loadGlobal().team?.key;
+        const key = flagStr(ctx.flags.key) ?? envVar("TEAM_KEY") ?? loadGlobal().team?.key;
         if (!key)
-            fail("A team key is needed.", 2, "Pass --key <teamKey> (your team admin has it), or set ZLEARN_TEAM_KEY.");
-        const server = flagStr(ctx.flags.server) ?? process.env.ZLEARN_SERVER ?? loadGlobal().team?.server ?? "https://zevqi.com";
+            fail("A team key is needed.", 2, "Pass --key <teamKey> (your team admin has it), or set ZEVQI_TEAM_KEY.");
+        const server = flagStr(ctx.flags.server) ?? envVar("SERVER") ?? loadGlobal().team?.server ?? "https://zevqi.com";
         const email = flagStr(ctx.flags.email) ?? loadGlobal().team?.email ?? gitEmail();
         if (!email)
             fail("Your email is needed.", 2, "Pass --email you@company.com (or set it once with: git config --global user.email you@company.com).");
@@ -46,10 +47,10 @@ export const setup = {
         const root = repoRoot(process.cwd());
         if (!root) {
             console.log(`\n${c.yellow("!")} You are not inside a git repository, so the team is joined but nothing else was set up.`);
-            console.log(`  Next: ${c.bold("cd your-project")} then run ${c.bold("zlearn setup")} again (it remembers your team).`);
+            console.log(`  Next: ${c.bold("cd your-project")} then run ${c.bold("zevqi setup")} again (it remembers your team).`);
             return;
         }
-        console.log(c.bold(`\n2/${steps}  Turning zlearn on in this repository`));
+        console.log(c.bold(`\n2/${steps}  Turning Zevqi on in this repository`));
         const sub = (flags) => ({ ...ctx, args: [], flags, json: false });
         await init.run(sub({ "no-prompt": true, ...(ctx.flags.agents ? { agents: true } : {}), ...(ctx.flags["no-agents"] ? { "no-agents": true } : {}) }));
         // 3. the first knowledge map
@@ -59,13 +60,13 @@ export const setup = {
                 await scan.run(sub({ ...(ctx.flags.names ? { names: true } : {}) }));
             }
             catch (e) {
-                console.log(`${c.yellow("!")} The scan did not finish: ${e instanceof Error ? e.message : String(e)}. Run ${c.bold("zlearn scan")} again later.`);
+                console.log(`${c.yellow("!")} The scan did not finish: ${e instanceof Error ? e.message : String(e)}. Run ${c.bold("zevqi scan")} again later.`);
             }
         }
         const t = resolveTeam();
         console.log(`\n${c.green("✓ Setup complete.")}`);
         console.log(`  See your knowledge map:   ${c.cyan(dashboardUrl(t?.server ?? server))}  ${c.dim("(sign in with your email, then Open dashboard)")}`);
-        console.log(`  Understand a file:        ${c.bold("zlearn review <file>")}`);
-        console.log(`  What is waiting:          ${c.bold("zlearn status")}`);
+        console.log(`  Understand a file:        ${c.bold("zevqi review <file>")}`);
+        console.log(`  What is waiting:          ${c.bold("zevqi status")}`);
     },
 };

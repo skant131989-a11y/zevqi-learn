@@ -164,7 +164,7 @@ test("scan reports clearly when there is nothing to scan or the server refuses",
   await new Promise((r) => refuse.listen(0, "127.0.0.1", r));
   t.after(() => refuse.close());
   const { repo, env: env2 } = repoWithHistory();
-  const out = await runAsync(["scan"], { cwd: repo, env: { ...env2, ZLEARN_TEAM_KEY: "zlt_refusekeyrefusekeyrefuse123", ZLEARN_SERVER: `http://127.0.0.1:${refuse.address().port}` } });
+  const out = await runAsync(["scan"], { cwd: repo, env: { ...env2, ZEVQI_TEAM_KEY: "zlt_refusekeyrefusekeyrefuse123", ZLEARN_SERVER: `http://127.0.0.1:${refuse.address().port}` } });
   assert.equal(out.status, 1);
   assert.match(out.stderr, /plan has ended/);
 });
@@ -240,7 +240,7 @@ test("doctor is happy without an API key, because scan and review need none", ()
   assert.equal(d.ok, true, JSON.stringify(d));
 });
 
-test("setup: one command joins the team, turns zlearn on and uploads the first knowledge map", async (t) => {
+test("setup: one command joins the team, turns Zevqi on and uploads the first knowledge map", async (t) => {
   const team = await startTeam();
   t.after(() => team.server.close());
   const { repo, env } = repoWithHistory();
@@ -249,14 +249,14 @@ test("setup: one command joins the team, turns zlearn on and uploads the first k
   assert.equal(out.status, 0, out.stderr);
   assert.match(out.stdout, /1\/3\s+Joining your team/);
   assert.match(out.stdout, /Joined Acme as me@acme.dev/);
-  assert.match(out.stdout, /2\/3\s+Turning zlearn on/);
+  assert.match(out.stdout, /2\/3\s+Turning Zevqi on/);
   assert.match(out.stdout, /3\/3\s+Mapping who holds the knowledge/);
   assert.match(out.stdout, /Uploaded 2 files and 2 people/);
   assert.match(out.stdout, /Setup complete/);
   assert.ok(out.stdout.includes(team.url + "/account"), "it ends with the dashboard link");
-  assert.match(out.stdout, /zlearn review <file>/, "and the next command to copy");
+  assert.match(out.stdout, /zevqi review <file>/, "and the next command to copy");
 
-  assert.ok(fs.existsSync(path.join(repo, ".zlearn", "config.json")), "zlearn is on in the repository");
+  assert.ok(fs.existsSync(path.join(repo, ".zlearn", "config.json")), "Zevqi is on in the repository");
   assert.ok(fs.existsSync(path.join(repo, ".claude", "settings.local.json")), "the Claude Code hooks are installed");
   assert.equal(team.got.scans.length, 1, "the first scan was uploaded");
   assert.ok(!JSON.stringify(team.got.scans).includes("secret-corp.com"));
@@ -278,7 +278,7 @@ test("setup: the email comes from git config, the key from the environment, and 
   assert.equal(noKey.status, 2);
   assert.match(noKey.stderr, /team key is needed/);
 
-  const ok = await runAsync(["setup", "--skip-scan"], { cwd: repo, env: { ...env, ZLEARN_TEAM_KEY: "zlt_envkeyenvkeyenvkeyenvkey123", ZLEARN_SERVER: team.url } });
+  const ok = await runAsync(["setup", "--skip-scan"], { cwd: repo, env: { ...env, ZEVQI_TEAM_KEY: "zlt_envkeyenvkeyenvkeyenvkey123", ZLEARN_SERVER: team.url } });
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /as fromgit@acme.dev/);
 

@@ -35,7 +35,7 @@ export async function postToolHook() {
   if (!file) return;
   const root = repoRoot(input.cwd || process.cwd());
   if (!root) return;
-  if (!fs.existsSync(projectDir(root))) return; // zlearn is not enabled in this repo
+  if (!fs.existsSync(projectDir(root))) return; // Zevqi is not enabled in this repo
   // Compare canonical paths so short names (C:\Users\RUNNER~1), case differences and symlinks cannot hide an edit.
   const rel = toPosix(path.relative(canonicalPath(root), canonicalPath(path.resolve(input.cwd || root, file))));
   if (rel.startsWith("..") || rel.startsWith(".zlearn") || rel.startsWith(".claude")) return;
@@ -47,7 +47,7 @@ export async function stopHook(cliPath: string) {
   const input = parse(await readStdin());
   const root = repoRoot(input.cwd || process.cwd());
   if (!root || !fs.existsSync(projectDir(root))) return;
-  // No API key means your coding agent writes the lessons (zlearn lesson add), so there is no background explanation to start.
+  // No API key means your coding agent writes the lessons (zevqi lesson add), so there is no background explanation to start.
   if (!apiKey(loadGlobal())) return;
   const buf = takeBuffer(root);
   if (!buf) return;
@@ -108,11 +108,11 @@ export async function commitGateHook() {
   const open = pending(root);
   if (open.length === 0) return;
   const files = new Set(open.flatMap((l) => l.changedFiles));
-  const message = `${open.length} AI change${open.length === 1 ? "" : "s"} touching ${files.size} file${files.size === 1 ? "" : "s"} not reviewed yet. Run "zlearn learn" in a terminal (about 2 minutes), then commit.`;
+  const message = `${open.length} AI change${open.length === 1 ? "" : "s"} touching ${files.size} file${files.size === 1 ? "" : "s"} not reviewed yet. Run "zevqi learn" in a terminal (about 2 minutes), then commit.`;
   if (cfg.gate === "block") {
-    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `zlearn: ${message} To skip once, run: zlearn gate off` } }));
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `zevqi: ${message} To skip once, run: zevqi gate off` } }));
   } else {
-    process.stdout.write(JSON.stringify({ systemMessage: `zlearn: ${message}` }));
+    process.stdout.write(JSON.stringify({ systemMessage: `zevqi: ${message}` }));
   }
 }
 

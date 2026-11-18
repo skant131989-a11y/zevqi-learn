@@ -1,11 +1,12 @@
 import path from "node:path";
 import { globalDir, loadGlobal, saveGlobal } from "./config.js";
 import { readJson, writeJson } from "./util.js";
-/** Team credentials for CI: ZLEARN_TEAM_KEY (+ ZLEARN_SERVER) win over the saved team, so no `team join` is needed in a pipeline. */
+import { envVar } from "./env.js";
+/** Team credentials for CI: ZEVQI_TEAM_KEY (+ ZEVQI_SERVER) win over the saved team, so no `team join` is needed in a pipeline. */
 export function resolveTeam() {
-    const key = process.env.ZLEARN_TEAM_KEY;
+    const key = envVar("TEAM_KEY");
     if (key)
-        return { server: process.env.ZLEARN_SERVER || loadGlobal().team?.server || "https://zevqi.com", key };
+        return { server: envVar("SERVER") || loadGlobal().team?.server || "https://zevqi.com", key };
     const t = loadGlobal().team;
     return t ? { server: t.server, key: t.key } : null;
 }
@@ -116,12 +117,12 @@ export async function pushRecords(records) {
 export async function pushScan(payload) {
     const team = resolveTeam();
     if (!team)
-        throw new Error("Not connected to a team. Run: zlearn team join --server <url> --key <key> --email <you>");
+        throw new Error("Not connected to a team. Run: zevqi team join --server <url> --key <key> --email <you>");
     return call(team, "POST", "/api/learn/v1/scan", payload);
 }
 export async function teamSummary() {
     const team = loadGlobal().team;
     if (!team)
-        throw new Error("Not connected to a team. Run: zlearn team join --server <url> --key <key> --email <you>");
+        throw new Error("Not connected to a team. Run: zevqi team join --server <url> --key <key> --email <you>");
     return call(team, "GET", "/api/learn/v1/summary");
 }

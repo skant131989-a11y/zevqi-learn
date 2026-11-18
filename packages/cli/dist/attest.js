@@ -89,7 +89,7 @@ export async function attestReview(root, included, text, commits) {
     const sync = await pushRecords([toRecord(done, cfg.share)]);
     console.log("\n" + c.green("✓") + (response === "understood" ? " Recorded: you read this change and described it in your own words." : " Recorded as an open question. It will not count as evidence of understanding until you follow up."));
     if (response !== "understood")
-        console.log(c.dim(`When you have looked into it, run: zlearn review ${included[0] ?? "<file>"}`));
+        console.log(c.dim(`When you have looked into it, run: zevqi review ${included[0] ?? "<file>"}`));
     if (sync.error)
         console.log(c.dim(`(team sync queued: ${sync.error})`));
     console.log(c.dim("This is evidence that you engaged with the change, not a score or a test. Your answers were not sent."));

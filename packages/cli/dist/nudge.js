@@ -2,6 +2,7 @@ import path from "node:path";
 import { loadGlobal, globalDir } from "./config.js";
 import { contributorCount } from "./git.js";
 import { c, readJson, writeJson } from "./util.js";
+import { envVar } from "./env.js";
 // A gentle, honest nudge: when a repo clearly has a team but you are not on a team plan, mention what teams get.
 // Rules: interactive terminals only, at most once a week, never in --json, easy to turn off, never blocks anything.
 const WEEK = 7 * 86_400_000;
@@ -26,13 +27,13 @@ export function maybeNudge(root, opts = {}) {
             lastNudgeAt: state.lastNudgeAt ?? null,
             now: Date.now(),
             interactive: Boolean(process.stdout.isTTY),
-            disabled: Boolean(process.env.ZLEARN_NO_NUDGE) || Boolean(process.env.CI),
+            disabled: Boolean(envVar("NO_NUDGE")) || Boolean(process.env.CI),
         });
         if (!ok)
             return;
-        console.log(`\n${c.bold("Tip:")} ${contributors} people committed here in the last 90 days. On your own, zlearn shows what ${c.bold("you")} understand.\n` +
+        console.log(`\n${c.bold("Tip:")} ${contributors} people committed here in the last 90 days. On your own, Zevqi shows what ${c.bold("you")} understand.\n` +
             `Teams see shared coverage, blind spots and single points of knowledge: ${c.cyan("https://zevqi.com/trial")} ${c.dim("(7 days free, no card)")}\n` +
-            c.dim("Hide this tip: export ZLEARN_NO_NUDGE=1"));
+            c.dim("Hide this tip: export ZEVQI_NO_NUDGE=1"));
         writeJson(stateFile(), { ...state, lastNudgeAt: Date.now() });
     }
     catch {

@@ -1,4 +1,5 @@
 import { apiKey, loadGlobal, providerOf } from "./config.js";
+import { envVar } from "./env.js";
 export const QUESTION_KINDS = ["Why", "Failure case", "Assumption", "Dependency"];
 export class AiError extends Error {
 }
@@ -13,7 +14,7 @@ Return ONE JSON object and nothing else:
  "questions":[{"kind":"Why","q":"","options":["","","",""],"answer":0,"why":"one sentence explaining the right answer"}]}
 Rules for the questions: write exactly 3, one of each kind where the code allows: "Why" (why the change was needed or why it is written this way), "Failure case" (a concrete scenario where something goes wrong or partly fails, and what happens), and "Assumption" or "Dependency" (what must be true for the code to be correct). Test real understanding of behaviour, data flow, edge cases or risk, never trivia like names or line counts. Each has 4 options, exactly one correct, with "answer" as the zero-based index of the correct option. Vary the position of the correct answer. Keep every option under 140 characters. Be specific to this diff; say plainly if something is uncertain instead of inventing detail.`;
 function defaultModel(provider, cfg) {
-    return process.env.ZLEARN_MODEL || cfg.model || (provider === "anthropic" ? "claude-haiku-4-5-20251001" : "gpt-4o-mini");
+    return envVar("MODEL") || cfg.model || (provider === "anthropic" ? "claude-haiku-4-5-20251001" : "gpt-4o-mini");
 }
 function extractJson(text) {
     const start = text.indexOf("{");
@@ -72,7 +73,7 @@ export async function explainDiff(diff, files, repo, mode = "change") {
     const cfg = loadGlobal();
     const key = apiKey(cfg);
     if (!key)
-        throw new AiError("No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY), run: zlearn config set apiKey <key>, or run: zlearn init --agents so your coding agent writes the lessons and no key is needed.");
+        throw new AiError("No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY), run: zevqi config set apiKey <key>, or run: zevqi init --agents so your coding agent writes the lessons and no key is needed.");
     const provider = providerOf(cfg);
     const model = defaultModel(provider, cfg);
     const intro = mode === "review" ? "These are recent committed changes (possibly written by a teammate or an agent) that the reader is about to review." : "These are uncommitted changes an AI coding agent just made.";

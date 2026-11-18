@@ -4,18 +4,18 @@ import { pushScan, resolveTeam } from "../team.js";
 import { c, fail } from "../util.js";
 import { emit, flagStr, needRoot } from "../context.js";
 /**
- * `zlearn scan`: a map of who has changed which files, from git history. It needs no model, no API key and no setup by your
+ * `zevqi scan`: a map of who has changed which files, from git history. It needs no model, no API key and no setup by your
  * teammates. Only counts, dates and pseudonymous author ids leave your machine: no code, no commit messages, no emails.
  */
 export const scan = {
     name: "scan",
     group: "Teams",
     summary: "Map who holds the knowledge of each file, from git history (no key needed)",
-    usage: "zlearn scan [--months 12] [--names] [--dry-run] [--json]",
+    usage: "zevqi scan [--months 12] [--names] [--dry-run] [--json]",
     examples: [
-        "zlearn scan --dry-run          # see exactly what would be sent, and send nothing",
-        "zlearn scan                    # upload to your team dashboard",
-        "zlearn scan --names            # also share author names (never emails)",
+        "zevqi scan --dry-run          # see exactly what would be sent, and send nothing",
+        "zevqi scan                    # upload to your team dashboard",
+        "zevqi scan --names            # also share author names (never emails)",
     ],
     async run(ctx) {
         const root = needRoot();
@@ -41,7 +41,7 @@ export const scan = {
         if (!team) {
             emit(ctx, { uploaded: false, summary: s }, () => {
                 printSummary(s);
-                console.log(c.yellow("\nNot uploaded: you are not on a team yet.") + c.dim(" Run: zlearn team join --server <url> --key <key> --email <you>"));
+                console.log(c.yellow("\nNot uploaded: you are not on a team yet.") + c.dim(" Run: zevqi team join --server <url> --key <key> --email <you>"));
             });
             return;
         }

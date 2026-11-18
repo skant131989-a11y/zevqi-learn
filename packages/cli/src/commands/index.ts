@@ -18,17 +18,17 @@ export function findCommand(name: string): Command | undefined {
 const GROUPS: CommandGroup[] = ["Setup", "Daily use", "Teams"];
 
 export function renderHelp(version: string): string {
-  const lines = [`${c.bold("zlearn")} ${version}  understand the code your AI agent writes, as fast as it writes it.`, "", `${c.bold("Usage")}  zlearn <command> [options]`];
+  const lines = [`${c.bold("Zevqi")} ${version}  understand the code your AI agent writes, as fast as it writes it.`, "", `${c.bold("Usage")}  zevqi <command> [options]`];
   for (const group of GROUPS) {
     lines.push("", c.bold(group));
     for (const cmd of COMMANDS.filter((x) => x.group === group)) lines.push(`  ${cmd.name.padEnd(10)} ${cmd.summary}`);
   }
-  lines.push("", c.dim("Run `zlearn help <command>` for details. Add --json to status, stats, doctor and team status for scripts."), c.dim("Docs: https://zevqi.com/docs"));
+  lines.push("", c.dim("Run `zevqi help <command>` for details. Add --json to status, stats, doctor and team status for scripts."), c.dim("Docs: https://zevqi.com/docs"));
   return lines.join("\n");
 }
 
 export function renderCommandHelp(cmd: Command): string {
-  const lines = [`${c.bold(`zlearn ${cmd.name}`)}  ${cmd.summary}`, "", `${c.bold("Usage")}  ${cmd.usage}`];
+  const lines = [`${c.bold(`zevqi ${cmd.name}`)}  ${cmd.summary}`, "", `${c.bold("Usage")}  ${cmd.usage}`];
   if (cmd.examples?.length) lines.push("", c.bold("Examples"), ...cmd.examples.map((e) => `  ${e}`));
   return lines.join("\n");
 }

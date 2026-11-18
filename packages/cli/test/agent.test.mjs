@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Agent mode: no API key. The coding agent (Codex, Cursor, Claude Code, anything that runs a shell command) writes the lesson and
-// hands it to `zlearn lesson add`. Capture comes from git, so no per-tool hooks are involved.
+// hands it to `zevqi lesson add`. Capture comes from git, so no per-tool hooks are involved.
 
 const CLI = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "cli.js");
 const run = (args, { cwd, env, input } = {}) => spawnSync(process.execPath, [CLI, ...args], { cwd, env: { ...process.env, NO_COLOR: "1", ...env }, input, encoding: "utf8" });
@@ -54,7 +54,7 @@ test("init with no API key installs the agent instructions once, and keeps every
   assert.equal(agents.split("<!-- zlearn:start -->").length - 1, 1);
   assert.match(agents, /zlearn lesson add/);
   assert.match(agents, /Failure case/);
-  assert.match(agents, /Skip this step if `zlearn` is not installed/, "teammates without zlearn are not affected");
+  assert.match(agents, /Skip this step if `zlearn` is not installed/, "teammates without Zevqi are not affected");
   const claude = fs.readFileSync(path.join(repo, "CLAUDE.md"), "utf8");
   assert.ok(claude.startsWith("# Claude\n\nBe brief.\n") && /^@AGENTS\.md$/m.test(claude), "CLAUDE.md imports AGENTS.md so Claude Code reads it too");
 
@@ -68,7 +68,7 @@ test("init with no API key installs the agent instructions once, and keeps every
 
   const un = run(["uninstall"], { cwd: repo, env });
   assert.equal(un.status, 0, un.stderr);
-  assert.equal(fs.readFileSync(path.join(repo, "AGENTS.md"), "utf8"), "# My rules\n\nUse tabs.\n", "uninstall removes only what zlearn added");
+  assert.equal(fs.readFileSync(path.join(repo, "AGENTS.md"), "utf8"), "# My rules\n\nUse tabs.\n", "uninstall removes only what zevqi added");
   assert.equal(fs.readFileSync(path.join(repo, "CLAUDE.md"), "utf8"), "# Claude\n\nBe brief.\n");
 });
 
@@ -77,7 +77,7 @@ test("init creates the files when they do not exist, and uninstall deletes files
   run(["init", "--no-prompt"], { cwd: repo, env });
   assert.ok(fs.existsSync(path.join(repo, "AGENTS.md")) && fs.existsSync(path.join(repo, "CLAUDE.md")));
   run(["uninstall"], { cwd: repo, env });
-  assert.ok(!fs.existsSync(path.join(repo, "AGENTS.md")) && !fs.existsSync(path.join(repo, "CLAUDE.md")), "files zlearn created are removed again");
+  assert.ok(!fs.existsSync(path.join(repo, "AGENTS.md")) && !fs.existsSync(path.join(repo, "CLAUDE.md")), "files zevqi created are removed again");
 });
 
 test("with an API key, init leaves AGENTS.md alone unless --agents is given", () => {
@@ -184,7 +184,7 @@ test("explain without a key points to the key-free way", () => {
   const out = run(["explain"], { cwd: repo, env });
   assert.notEqual(out.status, 0);
   assert.match(out.stderr, /No API key/);
-  assert.match(out.stderr, /zlearn init --agents/);
+  assert.match(out.stderr, /zevqi init --agents/);
 });
 
 test("the disclosure matches reality: with no key it says nothing is sent to a model provider, with a key it names where the diff goes", () => {

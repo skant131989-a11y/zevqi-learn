@@ -17,14 +17,14 @@ export async function main(argv: string[]): Promise<void> {
 
   if (name === "help") {
     const target = findCommand(pos[1]!);
-    if (!target) fail(`Unknown command "${pos[1]}".`, 2, "Run: zlearn help");
+    if (!target) fail(`Unknown command "${pos[1]}".`, 2, "Run: zevqi help");
     return void console.log(renderCommandHelp(target));
   }
 
   const cmd = findCommand(name);
   if (!cmd) {
     const near = suggest(name);
-    fail(`Unknown command "${name}".`, 2, near ? `Did you mean: zlearn ${near}?` : "Run: zlearn help");
+    fail(`Unknown command "${name}".`, 2, near ? `Did you mean: zevqi ${near}?` : "Run: zevqi help");
   }
   if (flags.help) return void console.log(renderCommandHelp(cmd));
 
@@ -34,11 +34,11 @@ export async function main(argv: string[]): Promise<void> {
 
 main(process.argv.slice(2)).catch((e: unknown) => {
   if (e instanceof CliError) {
-    console.error(c.red(`zlearn: ${e.message}`));
+    console.error(c.red(`zevqi: ${e.message}`));
     if (e.hint) console.error(c.dim(e.hint));
     process.exitCode = e.code;
     return;
   }
-  console.error(c.red(`zlearn: ${e instanceof Error ? e.message : String(e)}`));
+  console.error(c.red(`zevqi: ${e instanceof Error ? e.message : String(e)}`));
   process.exitCode = 1;
 });
