@@ -1,0 +1,85 @@
+name: "Zevqi check"
+description: "Comments on pull requests with the changed files that have AI changes nobody on your team has understood, and can fail the check."
+author: "Zevqi"
+branding:
+  icon: "check-circle"
+  color: "orange"
+
+inputs:
+  team-key:
+    description: "Your Zevqi team key. Store it as a repository secret (for example ZEVQI_TEAM_KEY). Without it the action does nothing."
+    required: false
+    default: ""
+  fail-on:
+    description: "When to fail the check: none (report only), unreviewed (a changed file has an un-reviewed AI change) or blind (a changed file has no current review evidence)."
+    required: false
+    default: "none"
+  comment:
+    description: "Post or update one comment on the pull request."
+    required: false
+    default: "true"
+  base:
+    description: "Git ref to compare against. Defaults to the pull request's base branch."
+    required: false
+    default: ""
+  version:
+    description: "Version of the zevqi command-line tool to run."
+    required: false
+    default: "latest"
+  server:
+    description: "Your Zevqi server, only if you self-host."
+    required: false
+    default: ""
+  github-token:
+    description: "Token used to post the comment. The default is fine; the workflow needs `pull-requests: write`."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Run zevqi check
+      id: check
+      shell: bash
+      env:
+        ZEVQI_TEAM_KEY: ${{ inputs.team-key }}
+        ZEVQI_SERVER: ${{ inputs.server }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        BASE_INPUT: ${{ inputs.base }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        if [ -z "$ZEVQI_TEAM_KEY" ]; then
+          echo "::warning::Zevqi check skipped: set the team-key input to your Zevqi team key, stored as a repository secret. Get a key at https://zevqi.com/trial"
+          echo "skipped=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        BASE="$BASE_INPUT"
+        if [ -z "$BASE" ] && [ -n "$GITHUB_BASE_REF" ]; then BASE="origin/$GITHUB_BASE_REF"; fi
+        ARGS=(check --fail-on "$FAIL_ON" --comment-file "$RUNNER_TEMP/zevqi-comment.md")
+        if [ -n "$BASE" ]; then ARGS+=(--base "$BASE"); fi
+        set +e
+        npx --yes "zevqi@$VERSION" "${ARGS[@]}"
+        echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+        echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+    - name: Post or update the pull request comment
+      if: steps.check.outputs.skipped == 'false' && inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        if [ -f "$RUNNER_TEMP/zevqi-comment.md" ]; then
+          bash "${{ github.action_path }}/scripts/post-pr-comment.sh" "$RUNNER_TEMP/zevqi-comment.md" || echo "::warning::Could not post the Zevqi comment (pull requests from forks have a read-only token)."
+        fi
+
+    - name: Apply the result
+      if: steps.check.outputs.skipped == 'false'
+      shell: bash
+      run: |
+        code="${{ steps.check.outputs.exit_code }}"
+        if [ -n "$code" ] && [ "$code" != "0" ]; then exit "$code"; fi

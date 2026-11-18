@@ -1,2 +1,4 @@
 # The CLI build is committed so `npm install -g github:zevqi/zlearn` needs no build step. CI checks it is current.
 packages/cli/dist/** text eol=lf linguist-generated=true -diff
+# shell scripts must keep Unix line endings so they run on GitHub runners
+*.sh text eol=lf

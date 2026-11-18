@@ -1,0 +1,56 @@
+name: Action self-test
+
+# Checks the Zevqi GitHub Action itself on pull requests to this repository. It uses no team key, so it never reads real team data.
+on:
+  pull_request:
+    paths:
+      - "action.yml"
+      - "scripts/post-pr-comment.sh"
+      - ".github/workflows/action-selftest.yml"
+      - "packages/cli/src/checkReport.ts"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  skips-without-a-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run the action without a team key
+        id: run
+        uses: ./
+      - name: It must have skipped quietly and left no comment behind
+        run: echo "the action finished without a key and did not fail the job"
+
+  one-comment-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Post the same comment twice, then change it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '<!-- zevqi-check -->\n## Zevqi check: self-test\n\nfirst version\n' > "$RUNNER_TEMP/c1.md"
+          printf '<!-- zevqi-check -->\n## Zevqi check: self-test\n\nsecond version\n' > "$RUNNER_TEMP/c2.md"
+          bash ./scripts/post-pr-comment.sh "$RUNNER_TEMP/c1.md"
+          bash ./scripts/post-pr-comment.sh "$RUNNER_TEMP/c1.md"
+          bash ./scripts/post-pr-comment.sh "$RUNNER_TEMP/c2.md"
+          PR="$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")"
+          COUNT="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '[.[] | select(.body | startswith("<!-- zevqi-check -->"))] | length')"
+          echo "Zevqi comments on the pull request: $COUNT"
+          [ "$COUNT" = "1" ]
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- zevqi-check -->")) | .body' | grep -q "second version"
+      - name: Remove the test comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR="$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")"
+          for id in $(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- zevqi-check -->")) | .id'); do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id" > /dev/null
+          done

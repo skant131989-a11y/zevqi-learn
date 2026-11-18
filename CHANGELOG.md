@@ -4,6 +4,17 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+## 0.6.0
+
+### Added
+- **GitHub Action.** `uses: zevqi/zevqi@v0` runs `zevqi check` on every pull request and keeps one comment up to date with the changed files that have AI changes nobody has understood. It skips quietly without a team key, and pull requests from forks keep working (the comment is skipped, the check still runs).
+- **Reviewer suggestions.** `zevqi check` prints `Ask: Priya` under a file when the team server can suggest who could review it next: first someone who reviewed an earlier version, then whoever has current evidence on the most other files in the same folder.
+- `zevqi check --comment-file <path>` writes the same pull request comment as a Markdown file, for any CI system.
+
+### Changed
+- The GitHub job summary now uses the same report as the comment, including the Ask column.
+- The README CI example uses the Action and `ZEVQI_TEAM_KEY`.
+
 ## 0.5.2
 
 ### Changed

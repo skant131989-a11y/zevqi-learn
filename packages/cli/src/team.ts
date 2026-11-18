@@ -14,7 +14,7 @@ export function resolveTeam(): { server: string; key: string } | null {
   return t ? { server: t.server, key: t.key } : null;
 }
 
-export type CheckFile = { path: string; status: "unknown" | "blind" | "stale" | "single" | "covered"; owners: number; unreviewed: boolean; level: "none" | "low" | "medium" | "high"; reasons: string[]; lastChange: string | null };
+export type CheckFile = { path: string; status: "unknown" | "blind" | "stale" | "single" | "covered"; owners: number; unreviewed: boolean; level: "none" | "low" | "medium" | "high"; reasons: string[]; lastChange: string | null; suggested?: { name: string; why: string }[] };
 export type CheckResult = { team: { name: string }; files: CheckFile[]; totals: { files: number; unreviewed: number; blind: number; stale?: number; single: number; covered: number; unknown: number } };
 
 /** Ask the team server which of these files have AI changes nobody has understood. */

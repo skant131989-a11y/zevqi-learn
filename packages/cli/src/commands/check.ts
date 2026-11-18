@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { changedSince, repoName } from "../git.js";
 import { checkFiles, resolveTeam, type CheckFile } from "../team.js";
+import { checkMarkdown, COMMENT_MARKER, needsAttention } from "../checkReport.js";
 import { c, fail } from "../util.js";
 import { emit, flagStr, needRoot, type Command } from "../context.js";
 
@@ -22,11 +23,12 @@ export const check: Command = {
   name: "check",
   group: "Teams",
   summary: "Pull-request gate: which changed files have AI changes nobody has understood",
-  usage: "zevqi check [--base <ref>] [--files a.ts,b.ts] [--fail-on none|unreviewed|blind] [--strict] [--json]",
+  usage: "zevqi check [--base <ref>] [--files a.ts,b.ts] [--fail-on none|unreviewed|blind] [--strict] [--json] [--comment-file <path>]",
   examples: [
     "zevqi check --base origin/main",
     "zevqi check --base origin/main --fail-on unreviewed     # exit 1 if a changed file has un-reviewed AI changes",
     "ZEVQI_TEAM_KEY=zlt_… zevqi check --fail-on blind       # in CI, no `team join` needed",
+    "zevqi check --base origin/main --comment-file zevqi-comment.md   # a ready-made pull request comment",
   ],
   async run(ctx) {
     const failOn = (flagStr(ctx.flags["fail-on"]) ?? "none") as FailOn;
@@ -49,7 +51,7 @@ export const check: Command = {
     }
 
     const bad = result.files.filter((f) => violates(f, failOn));
-    const interesting = result.files.filter((f) => f.status !== "covered" && f.status !== "unknown");
+    const interesting = result.files.filter(needsAttention);
     const t = result.totals;
 
     emit(ctx, { ...result, failOn, failed: bad.length > 0 }, () => {
@@ -58,6 +60,7 @@ export const check: Command = {
         const tag = f.unreviewed ? c.red("un-reviewed AI change") : f.status === "blind" ? c.red("never reviewed") : f.status === "stale" ? c.red("reviewed, but changed since") : c.yellow("only one person has reviewed this");
         console.log(`  ${f.status === "blind" || f.unreviewed ? c.red(ICON[f.status]) : c.yellow(ICON[f.status])} ${f.path}  ${c.dim("·")} ${tag}`);
         if (reason(f)) console.log(`      ${c.dim(reason(f)!)}`);
+        if (f.suggested?.length) console.log(`      ${c.dim("Ask: " + f.suggested.map((s) => s.name).join(", "))}`);
       }
       console.log(`${c.dim(`${t.covered} covered · ${t.single} one reviewer · ${t.blind} never reviewed · ${t.stale ?? 0} out of date · ${t.unreviewed} un-reviewed · ${t.unknown} not AI-changed`)}`);
       if (bad.length) console.log(c.red(`\n✗ ${bad.length} file${bad.length === 1 ? " breaks" : "s break"} the "${failOn}" policy. Run zevqi learn and pass the lessons, then push again.`));
@@ -74,12 +77,19 @@ export const check: Command = {
         console.log(`::${level} file=${f.path}::${msg}`);
       }
     }
+    const markdown = checkMarkdown(result, failOn, bad.map((f) => f.path), resolveTeam()?.server);
+    const commentFile = flagStr(ctx.flags["comment-file"]);
+    if (commentFile) {
+      try {
+        fs.writeFileSync(commentFile, markdown);
+      } catch (e) {
+        console.error(c.yellow(`zevqi check: could not write ${commentFile}: ${e instanceof Error ? e.message : String(e)}`));
+      }
+    }
     const summaryFile = process.env.GITHUB_STEP_SUMMARY;
     if (summaryFile) {
-      const rows = interesting.map((f) => `| \`${f.path}\` | ${f.unreviewed ? "un-reviewed AI change" : f.status === "blind" ? "never reviewed" : f.status === "stale" ? "out of date" : "one reviewer"} | ${f.level ?? ""} | ${reason(f) ?? ""} |`).join("\n");
-      const md = `### zevqi check\n\n**${t.files}** changed file(s): ${t.covered} covered, ${t.single} one reviewer, ${t.blind} never reviewed, ${t.stale ?? 0} out of date, ${t.unreviewed} un-reviewed.\n\n${interesting.length ? `| File | Evidence | Level | Why |\n|---|---|---|---|\n${rows}\n` : "Nothing needs attention.\n"}\n${bad.length ? `**Failed** the \`${failOn}\` policy.\n` : ""}`;
       try {
-        fs.appendFileSync(summaryFile, md);
+        fs.appendFileSync(summaryFile, markdown.replace(COMMENT_MARKER, ""));
       } catch {
         // the summary is a nicety
       }

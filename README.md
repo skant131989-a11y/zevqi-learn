@@ -130,25 +130,32 @@ Lessons then sync automatically after each quiz. The team server is a hosted ser
 
 ### Gate pull requests in CI
 
-`zevqi check` asks your team server which files a pull request changes that still have AI-written changes nobody on the team has understood. It sends only file paths and the repository name, uses a team key from `ZLEARN_TEAM_KEY` (no `team join` needed in CI), and prints inline GitHub annotations and a job summary.
+`zevqi check` asks your team server which files a pull request changes that still have AI-written changes nobody on the team has understood. It sends only file paths and the repository name, uses a team key from `ZEVQI_TEAM_KEY` (no `team join` needed in CI), prints inline GitHub annotations and a job summary, and can name teammates who could review each file.
+
+The GitHub Action runs it and keeps **one comment** on each pull request up to date:
 
 ```yaml
 # .github/workflows/zevqi.yml
-name: zevqi check
+name: Zevqi
 on: pull_request
+permissions:
+  contents: read
+  pull-requests: write   # lets the action post its comment
 jobs:
-  understand:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: git clone --depth 1 https://github.com/zevqi/zevqi /tmp/zevqi && cd /tmp/zevqi && npm ci && npm run build:cli
-      - run: node /tmp/zevqi/packages/cli/dist/cli.js check --base origin/${{ github.base_ref }} --fail-on unreviewed
-        env:
-          ZLEARN_TEAM_KEY: ${{ secrets.ZLEARN_TEAM_KEY }}
+        with: { fetch-depth: 0 }   # the check compares your branch with the base branch
+      - uses: zevqi/zevqi@v0
+        with:
+          team-key: ${{ secrets.ZEVQI_TEAM_KEY }}   # a team key, stored as a repository secret
+          fail-on: unreviewed                       # none (default), unreviewed or blind
 ```
+
+Without a `team-key` the action skips quietly and tells you why. Pull requests from forks have a read-only token, so the comment is skipped there while the check still runs. Other inputs: `comment: "false"` (no comment), `base` (a different base ref), `version` (pin the CLI version) and `server` (self-hosted).
+
+To run it yourself in any CI, `zevqi check --base origin/main --comment-file zevqi-comment.md` writes the same comment as a Markdown file.
 
 Policies: `--fail-on none` (default, report only), `unreviewed` (fail if a changed file has an AI change nobody has reviewed), `blind` (fail if nobody has ever understood a changed file). A server outage never breaks your pipeline unless you pass `--strict`. Exit codes: 0 ok, 1 policy failed, 2 usage error, 3 outage with `--strict`.
 
