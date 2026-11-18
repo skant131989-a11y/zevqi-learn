@@ -2,7 +2,7 @@
 
 **Understand the code your AI agent writes, as fast as it writes it.**
 
-[![CI](https://github.com/zevqi/zlearn/actions/workflows/ci.yml/badge.svg)](https://github.com/zevqi/zlearn/actions/workflows/ci.yml)
+[![CI](https://github.com/zevqi/zevqi/actions/workflows/ci.yml/badge.svg)](https://github.com/zevqi/zevqi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 ![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 
@@ -42,11 +42,11 @@ No team? Install it, then `zevqi init` and `zevqi scan --dry-run` to see what a 
 
 > **Formerly zlearn.** The package is now `zevqi` and the command is `zevqi`. The old `zlearn` command still works (the package installs both), so nothing you set up before breaks. If you installed `zlearn-cli`, switch with `npm install -g zevqi`.
 
-Prefer to read and build it yourself? The npm package is [`zevqi`](https://www.npmjs.com/package/zevqi), and you can also install straight from GitHub with `npm install -g github:zevqi/zlearn`, or build from source:
+Prefer to read and build it yourself? The npm package is [`zevqi`](https://www.npmjs.com/package/zevqi), and you can also install straight from GitHub with `npm install -g github:zevqi/zevqi`, or build from source:
 
 ```bash
-git clone https://github.com/zevqi/zlearn
-cd zlearn/packages/cli && npm install && npm run build
+git clone https://github.com/zevqi/zevqi
+cd zevqi/packages/cli && npm install && npm run build
 npm link                       # makes the `zevqi` command available
 ```
 
@@ -131,7 +131,7 @@ Lessons then sync automatically after each quiz. The team server is a hosted ser
 `zevqi check` asks your team server which files a pull request changes that still have AI-written changes nobody on the team has understood. It sends only file paths and the repository name, uses a team key from `ZLEARN_TEAM_KEY` (no `team join` needed in CI), and prints inline GitHub annotations and a job summary.
 
 ```yaml
-# .github/workflows/zlearn.yml
+# .github/workflows/zevqi.yml
 name: zevqi check
 on: pull_request
 jobs:
@@ -142,8 +142,8 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: git clone --depth 1 https://github.com/zevqi/zlearn /tmp/zlearn && cd /tmp/zlearn && npm ci && npm run build:cli
-      - run: node /tmp/zlearn/packages/cli/dist/cli.js check --base origin/${{ github.base_ref }} --fail-on unreviewed
+      - run: git clone --depth 1 https://github.com/zevqi/zevqi /tmp/zevqi && cd /tmp/zevqi && npm ci && npm run build:cli
+      - run: node /tmp/zevqi/packages/cli/dist/cli.js check --base origin/${{ github.base_ref }} --fail-on unreviewed
         env:
           ZLEARN_TEAM_KEY: ${{ secrets.ZLEARN_TEAM_KEY }}
 ```

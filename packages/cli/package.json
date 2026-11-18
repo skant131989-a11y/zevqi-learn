@@ -40,10 +40,10 @@
   "homepage": "https://zevqi.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zevqi/zlearn.git",
+    "url": "git+https://github.com/zevqi/zevqi.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/zevqi/zlearn/issues"
+    "url": "https://github.com/zevqi/zevqi/issues"
   }
 }

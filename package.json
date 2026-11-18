@@ -17,11 +17,11 @@
   ],
   "homepage": "https://zevqi.com",
   "bugs": {
-    "url": "https://github.com/zevqi/zlearn/issues"
+    "url": "https://github.com/zevqi/zevqi/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zevqi/zlearn.git"
+    "url": "git+https://github.com/zevqi/zevqi.git"
   },
   "license": "MIT",
   "author": "Neha Singh <hello@zevqi.com>",

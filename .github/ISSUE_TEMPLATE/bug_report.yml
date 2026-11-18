@@ -16,18 +16,18 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      placeholder: "1. zlearn init\n2. ..."
+      placeholder: "1. zevqi init\n2. ..."
     validations:
       required: true
   - type: textarea
     id: doctor
     attributes:
-      label: Output of `zlearn doctor`
+      label: Output of `zevqi doctor`
       render: text
   - type: input
     id: version
     attributes:
-      label: zlearn version (`zlearn --version`)
+      label: Zevqi version (`zevqi --version`)
   - type: input
     id: env
     attributes:
