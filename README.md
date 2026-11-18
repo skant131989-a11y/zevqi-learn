@@ -2,6 +2,8 @@
 
 **Understand the code your AI agent writes, as fast as it writes it.**
 
+[Zevqi](https://zevqi.com) is an open-source command-line tool and a team dashboard that show which parts of a codebase your developers have demonstrably understood, even when AI writes the code. Website: [zevqi.com](https://zevqi.com) · [Live demo, no sign-up](https://zevqi.com/demo/dashboard) · [Security and data](https://zevqi.com/security)
+
 [![CI](https://github.com/zevqi/zevqi/actions/workflows/ci.yml/badge.svg)](https://github.com/zevqi/zevqi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 ![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
@@ -32,7 +34,7 @@ Passed 3/3.
 
 ## Install
 
-Requires Node 20+ and git. In your project folder, with your team key (from your team admin or your Zevqi dashboard), one paste does everything: installs Zevqi, joins your team, turns it on in this repository and uploads your first knowledge map. It works in macOS, Linux and Windows PowerShell.
+Requires Node 20+ and git. In your project folder, with your team key (from your team admin or your [Zevqi](https://zevqi.com) dashboard), one paste does everything: installs Zevqi, joins your team, turns it on in this repository and uploads your first knowledge map. It works in macOS, Linux and Windows PowerShell.
 
 ```bash
 npm install -g zevqi; zevqi setup --key <your-team-key>
