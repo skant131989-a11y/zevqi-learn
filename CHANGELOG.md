@@ -4,6 +4,11 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+## 0.5.2
+
+### Changed
+- Documentation only: the README now links Zevqi to zevqi.com near the top and in the setup text, so the npm page points to the website. No behaviour change.
+
 ## 0.5.1
 
 ### Changed
