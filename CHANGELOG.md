@@ -4,6 +4,11 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+## 0.5.1
+
+### Changed
+- Package metadata only: the repository, homepage and issue links on the npm page now point at github.com/zevqi/zevqi (the repository was renamed from zlearn). No behaviour change.
+
 ## 0.5.0
 
 ### Changed

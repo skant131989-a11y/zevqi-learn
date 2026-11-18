@@ -1,6 +1,6 @@
 {
   "name": "zevqi",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Zevqi: understand the code your AI agent writes. A knowledge map from git, attested reviews and a team dashboard. No API key needed.",
   "keywords": [
     "zevqi",
