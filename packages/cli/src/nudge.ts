@@ -43,7 +43,7 @@ export function maybeNudge(root: string, opts: { json?: boolean } = {}): void {
     if (!ok) return;
     console.log(
       `\n${c.bold("Tip:")} ${contributors} people committed here in the last 90 days. On your own, Zevqi shows what ${c.bold("you")} understand.\n` +
-        `Teams see shared coverage, blind spots and single points of knowledge: ${c.cyan("https://zevqi.com/trial")} ${c.dim("(7 days free, no card)")}\n` +
+        `Teams see shared coverage, blind spots and single points of knowledge: ${c.cyan("https://zevqi.com/trial")} ${c.dim("(30 days free, no card)")}\n` +
         c.dim("Hide this tip: export ZEVQI_NO_NUDGE=1")
     );
     writeJson(stateFile(), { ...state, lastNudgeAt: Date.now() });
