@@ -122,7 +122,7 @@ Each quiz earns XP (**+20** for a pass, **+10** for a perfect score, **+5** for 
 
 A hosted team dashboard shows who understands which parts of the codebase, which AI-changed files nobody has reviewed (blind spots), which are understood by only one person, coverage over time, streaks and more.
 
-- **Try it free for 7 days**, no card: <https://zevqi.com/trial>
+- **Try it free for 30 days**, no card: <https://zevqi.com/trial>
 - **Explore a live demo**: <https://zevqi.com/demo/dashboard>
 - **Pricing**: <https://zevqi.com/pricing>
 
