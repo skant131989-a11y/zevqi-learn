@@ -4,6 +4,9 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+### Changed
+- README and the npm description now say who it is for: engineers learn what their agent wrote, leaders (CTO, VP Engineering, engineering managers) decide where to spend review time.
+
 ## 0.6.1
 
 ### Added

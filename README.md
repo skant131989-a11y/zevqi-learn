@@ -4,6 +4,16 @@
 
 [Zevqi](https://zevqi.com) is an open-source command-line tool and a team dashboard that show which parts of a codebase your developers have demonstrably understood, even when AI writes the code. Website: [zevqi.com](https://zevqi.com) · [Live demo, no sign-up](https://zevqi.com/demo/dashboard) · [Security and data](https://zevqi.com/security)
 
+## Who it is for
+
+| | As an engineer, you learn | As a leader (CTO, VP Engineering, engineering manager), you decide |
+|---|---|---|
+| **What you get** | After your agent finishes, a short lesson on what changed and why: the decisions in the code, what it depends on and what could break. Then three questions and your own call: understood, needs clarification, or investigate. | Which AI-changed files have a current review, which only one person understands, and which nobody has, each with the reason it was flagged. |
+| **What you do with it** | Understand the change before you commit. See where you are the only one who knows a file. Streaks and levels stay private to you. | Choose each week which files to review and who could review them, add a second person to single-owner files, and gate pull requests until the changed files have been reviewed. |
+| **Cost** | Free and open source. No account and no key. | A team dashboard with a 30-day free trial and no card. |
+
+Nobody is ranked and there is no score per person.
+
 [![CI](https://github.com/zevqi/zevqi/actions/workflows/ci.yml/badge.svg)](https://github.com/zevqi/zevqi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 ![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
