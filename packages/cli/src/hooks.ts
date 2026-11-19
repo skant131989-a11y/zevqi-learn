@@ -5,6 +5,7 @@ import path from "node:path";
 import { explainDiff, AiError } from "./ai.js";
 import { apiKey, loadGlobal, loadProject, projectDir } from "./config.js";
 import { canonicalPath, diffForFiles, fileRevs, repoName, repoRoot } from "./git.js";
+import { recordHookActivity } from "./activity.js";
 import { listLessons, newLessonId, pending, recordEdit, saveLesson, takeBuffer, type Lesson } from "./lessons.js";
 import { pushRecords, toRecord } from "./team.js";
 import { readJson, readStdin, toPosix, uid, writeJson } from "./util.js";
@@ -36,6 +37,8 @@ export async function postToolHook() {
   const root = repoRoot(input.cwd || process.cwd());
   if (!root) return;
   if (!fs.existsSync(projectDir(root))) return; // Zevqi is not enabled in this repo
+  const relForLog = toPosix(path.relative(canonicalPath(root), canonicalPath(path.resolve(input.cwd || root, file))));
+  recordHookActivity(root, "post-tool", relForLog.startsWith("..") ? undefined : relForLog);
   // Compare canonical paths so short names (C:\Users\RUNNER~1), case differences and symlinks cannot hide an edit.
   const rel = toPosix(path.relative(canonicalPath(root), canonicalPath(path.resolve(input.cwd || root, file))));
   if (rel.startsWith("..") || rel.startsWith(".zlearn") || rel.startsWith(".claude")) return;
@@ -47,6 +50,7 @@ export async function stopHook(cliPath: string) {
   const input = parse(await readStdin());
   const root = repoRoot(input.cwd || process.cwd());
   if (!root || !fs.existsSync(projectDir(root))) return;
+  recordHookActivity(root, "stop");
   // No API key means your coding agent writes the lessons (zevqi lesson add), so there is no background explanation to start.
   if (!apiKey(loadGlobal())) return;
   const buf = takeBuffer(root);
@@ -108,7 +112,7 @@ export async function commitGateHook() {
   const open = pending(root);
   if (open.length === 0) return;
   const files = new Set(open.flatMap((l) => l.changedFiles));
-  const message = `${open.length} AI change${open.length === 1 ? "" : "s"} touching ${files.size} file${files.size === 1 ? "" : "s"} not reviewed yet. Run "zevqi learn" in a terminal (about 2 minutes), then commit.`;
+  const message = `${open.length} AI change${open.length === 1 ? "" : "s"} touching ${files.size} file${files.size === 1 ? "" : "s"} not reviewed yet. Run "zevqi" in a terminal (about 2 minutes), then commit.`;
   if (cfg.gate === "block") {
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `zevqi: ${message} To skip once, run: zevqi gate off` } }));
   } else {
@@ -166,6 +170,24 @@ export function hooksInstalled(root: string): string[] {
     const s = readJson<Record<string, any>>(settingsPath(root, scope), {});
     return Object.values(s.hooks ?? {}).some((groups) => (groups as Group[]).some(ours));
   });
+}
+
+/** The zevqi program each installed hook points at. A hook whose program has moved or been uninstalled fails silently, so doctor checks them. */
+export function hookCliPaths(root: string): { scope: string; cliPath: string }[] {
+  const out: { scope: string; cliPath: string }[] = [];
+  for (const scope of ["local", "shared", "global"] as const) {
+    const s = readJson<Record<string, any>>(settingsPath(root, scope), {});
+    for (const groups of Object.values(s.hooks ?? {})) {
+      for (const g of groups as Group[]) {
+        if (!ours(g)) continue;
+        for (const h of g.hooks) {
+          const cliPath = h.args?.find((a) => /[\\/]dist[\\/]cli\.js$/.test(a));
+          if (cliPath && !out.some((x) => x.scope === scope && x.cliPath === cliPath)) out.push({ scope, cliPath });
+        }
+      }
+    }
+  }
+  return out;
 }
 
 export { MARK, listLessons };

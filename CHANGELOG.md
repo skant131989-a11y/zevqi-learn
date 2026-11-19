@@ -4,6 +4,20 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+## 0.6.1
+
+### Added
+- **`zevqi` on its own does the next thing.** In a repository where Zevqi is on, lessons waiting open the dashboard (in a terminal); otherwise it shows the status. Anywhere else it still shows the help.
+- **`zevqi ui` opens your browser** at the lesson that is waiting, instead of only printing a link. `--no-open` (or `ZEVQI_NO_OPEN`, or running in CI) keeps it from opening one.
+- **A finish screen after every quiz**, in the terminal and the browser: how many AI-changed files you have reviewed, how many lessons are still waiting, and a link to the next one (or to the knowledge map).
+- **`zevqi doctor --live`** waits for your agent's next edit and confirms the hooks really fired, with what to try if they did not. Plain `zevqi doctor` now also says when the hooks last ran and checks that each installed hook still points at a zevqi that exists.
+- `zevqi setup` ends with the one step that is easy to miss: restart Claude Code once so it loads the hooks.
+
+### Changed
+- The commit-gate message says `Run "zevqi"` instead of `zevqi learn`. `zevqi learn` still works.
+- `zevqi ui` moves to the next free port when 4317 is busy, and a port you ask for with `--port` that is busy now fails with a short message instead of a stack trace.
+- The hooks leave a small `hook-activity.json` in `.zlearn/` (a time, the event name and, for edits, the file path). It never leaves your machine.
+
 ## 0.6.0
 
 ### Added

@@ -2,8 +2,9 @@ import fs from "node:fs";
 import { apiKey, ensureGitignore, globalConfigPath, loadGlobal, loadProject, projectDir, providerOf, saveGlobal, saveProject } from "../config.js";
 import { agentBlockInstalled, installAgentBlock, removeAgentBlock } from "../agents.js";
 import { repoRoot } from "../git.js";
-import { hooksInstalled, installHooks, settingsPath, uninstallHooks } from "../hooks.js";
-import { aiDisclosure, askLine, c, fail, mask, readSecret } from "../util.js";
+import { lastHookActivity } from "../activity.js";
+import { hookCliPaths, hooksInstalled, installHooks, settingsPath, uninstallHooks } from "../hooks.js";
+import { aiDisclosure, askLine, c, fail, mask, readSecret, timeAgo } from "../util.js";
 import { emit, flagStr, needEnabled, needRoot } from "../context.js";
 const scopeOf = (ctx) => (ctx.flags.global ? "global" : ctx.flags.shared ? "shared" : "local");
 const GATES = ["off", "warn", "block"];
@@ -115,8 +116,9 @@ export const doctor = {
     name: "doctor",
     group: "Setup",
     summary: "Check that everything is wired up",
-    usage: "zevqi doctor [--json]",
-    run(ctx) {
+    usage: "zevqi doctor [--json] [--live [--wait 120]]",
+    examples: ["zevqi doctor", "zevqi doctor --live      # then ask your agent to edit any file; this confirms the hooks fired"],
+    async run(ctx) {
         const root = repoRoot(process.cwd());
         const cfg = loadGlobal();
         const checks = [];
@@ -127,6 +129,11 @@ export const doctor = {
             add(fs.existsSync(projectDir(root)), "Zevqi enabled in this repo", "zevqi init");
             const where = hooksInstalled(root);
             add(where.length > 0, `Claude Code hooks installed${where.length ? ` (${where.join(", ")})` : ""}`, "zevqi init");
+            // A hook whose program has moved (a reinstall, a new Node version) fails silently, so check each one still exists.
+            for (const h of hookCliPaths(root))
+                add(fs.existsSync(h.cliPath), `Hook program found (${h.scope})`, `the hooks point at ${h.cliPath}, which is missing. Run: zevqi init`);
+            const seen = fs.existsSync(projectDir(root)) ? lastHookActivity(root) : null;
+            add(true, seen ? `Hooks last ran ${timeAgo(seen.at)} (${seen.event}${seen.file ? `: ${seen.file}` : ""})` : "Hooks have not run in this repo yet. Restart Claude Code, then let your agent edit a file (zevqi doctor --live confirms it)");
         }
         const agentMode = Boolean(root && agentBlockInstalled(root));
         // A key is optional: scan, attested review and agent-written lessons all work without one.
@@ -141,5 +148,28 @@ export const doctor = {
         });
         if (checks.some((x) => !x.ok))
             process.exitCode = 1;
+        // --live: the only real proof the hooks work is seeing one fire. Wait for the next hook event from the agent.
+        if (ctx.flags.live && !ctx.json) {
+            if (!root || !fs.existsSync(projectDir(root)))
+                return void console.log(c.red("\nZevqi is not enabled here, so there is nothing to wait for. Run: zevqi init"));
+            const waitSec = Math.max(1, Math.min(600, Number(flagStr(ctx.flags.wait)) || 120));
+            const since = Date.now();
+            console.log(`\nWaiting up to ${waitSec}s. In Claude Code, in this folder, ask your agent to edit any file (a comment is enough).`);
+            const deadline = since + waitSec * 1000;
+            while (Date.now() < deadline) {
+                const seen = lastHookActivity(root);
+                if (seen && Date.parse(seen.at) >= since) {
+                    console.log(c.green(`✓ The hooks are live: ${seen.event} ran${seen.file ? ` for ${seen.file}` : ""}.`));
+                    console.log(c.dim(apiKey(cfg) ? "With your API key, a lesson is written in the background when the agent finishes its turn." : "Without an API key your agent writes the lesson (AGENTS.md); run zevqi once it has finished."));
+                    return;
+                }
+                await new Promise((r) => setTimeout(r, 500));
+            }
+            console.log(c.red("✗ No hook ran. Claude Code did not call Zevqi."));
+            console.log("  1. Restart Claude Code in this folder (hooks are read when it starts), or open /hooks to check they are listed.");
+            console.log("  2. Make sure you opened Claude Code in this repository folder, not a parent or sub-folder.");
+            console.log(`  3. Check the hook settings file above exists, then run ${c.bold("zevqi init")} again.`);
+            process.exitCode = 1;
+        }
     },
 };

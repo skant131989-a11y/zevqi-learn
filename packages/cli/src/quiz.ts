@@ -3,6 +3,7 @@ import { loadProject } from "./config.js";
 import { complete, listLessons, RESPONSES, setResponse, type Lesson, type Response } from "./lessons.js";
 import { maybeNudge } from "./nudge.js";
 import { bar, computeStats } from "./stats.js";
+import { progressLine, reviewProgress } from "./progress.js";
 import { pushRecords, toRecord } from "./team.js";
 import { c } from "./util.js";
 
@@ -68,13 +69,15 @@ export async function runQuiz(root: string, lesson: Lesson): Promise<Lesson> {
   }
   let done = complete(root, lesson, correct, cfg.passRatio);
   if (response) done = setResponse(root, done, response, note);
-  console.log("\n" + (done.status === "passed" ? c.green(`Passed ${correct}/${done.total}.`) : c.yellow(`${correct}/${done.total}. Re-read the summary, then run zevqi learn again.`)));
+  console.log("\n" + (done.status === "passed" ? c.green(`Passed ${correct}/${done.total}.`) : c.yellow(`${correct}/${done.total}. Re-read the summary, then run zevqi again.`)));
   if (response && response !== "understood") {
     console.log(c.yellow("Noted. This will not count as evidence of understanding for your team until you follow up."));
     console.log(c.dim(`When you have looked into it, run: zevqi review ${done.changedFiles[0] ?? "<file>"}`));
   }
   printProgress(before, computeStats(listLessons(root)), done.status === "passed" && response !== "clarify" && response !== "investigate");
   await syncLesson(done, cfg.share);
+  const where = progressLine(reviewProgress(root));
+  if (where) console.log(c.dim(where));
   maybeNudge(root);
   return done;
 }

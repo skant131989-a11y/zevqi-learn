@@ -3,6 +3,7 @@ import http from "node:http";
 import { loadProject } from "./config.js";
 import { complete, getLesson, knowledgeMap, listLessons, setResponse } from "./lessons.js";
 import { syncLesson } from "./quiz.js";
+import { progressLine, reviewProgress } from "./progress.js";
 import { escapeHtml as h, timeAgo } from "./util.js";
 const CSS = `
 :root{--ink:#101216;--fog:#f4f5f7;--line:#e3e5ea;--violet:#5b4bff;--lime:#c8f135;--slate:#5b6270}
@@ -41,9 +42,10 @@ function home(root, token) {
 <p style="margin:10px 0 0"><a href="/lesson/${l.id}?t=${token}">${l.status === "pending" ? "Take the quiz →" : "Review →"}</a></p></div>`)
         .join("");
     const open = lessons.filter((l) => l.status === "pending").length;
-    return page("Lessons", `<p><b>${open}</b> waiting for review.</p>${rows}`, "", token);
+    const line = progressLine(reviewProgress(root));
+    return page("Lessons", `<p><b>${open}</b> waiting for review.${line ? ` <span class="muted">${h(line)}</span>` : ""}</p>${rows}`, "", token);
 }
-function lessonPage(l, token) {
+function lessonPage(l, token, nextId = null) {
     const files = l.files.map((f) => `<tr><td><code>${h(f.path)}</code></td><td>${h(f.note)}</td></tr>`).join("");
     const points = (title, items) => (items?.length ? `<h2 style="margin-top:14px;font-size:15px">${h(title)}</h2><ul class="pts">${items.map((x) => `<li>${h(x)}</li>`).join("")}</ul>` : "");
     const qs = l.questions
@@ -56,10 +58,14 @@ document.getElementById('go').onclick=async()=>{
  if(picks.includes(-1)){alert('Answer every question first.');return}
  let correct=0;picks.forEach((p,i)=>{const ok=p===answers[i];if(ok)correct++;document.getElementById('why'+i).innerHTML=(ok?'✅ Correct. ':'❌ Not quite. ')+whys[i]});
  const r=await fetch('/api/answer?t='+token,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,correct,response:(document.querySelector('input[name=call]:checked')||{}).value||'understood',note:(document.getElementById('note')||{}).value||''})});
- const j=await r.json();document.getElementById('result').textContent=j.status==='passed'?'Passed '+correct+'/'+answers.length+'.':correct+'/'+answers.length+'. Re-read the summary and try again from the terminal: zevqi learn';
+ const j=await r.json();const res=document.getElementById('result');
+ res.textContent=(j.status==='passed'?'Passed '+correct+'/'+answers.length+'.':correct+'/'+answers.length+'. Re-read the summary, then retake it by running zevqi in a terminal.')+(j.line?' '+j.line:'');
+ const next=document.createElement('a');next.style.fontWeight='700';next.style.marginLeft='6px';
+ if(j.nextId){next.href='/lesson/'+j.nextId+'?t='+token;next.textContent='Next lesson →'}else{next.href='/map?t='+token;next.textContent='See your knowledge map →'}
+ res.appendChild(next);
  document.getElementById('go').disabled=true};`;
     return page("Lesson", `<p><a href="/?t=${token}">← All lessons</a></p><div class="card">${badge(l)} <span class="muted">${h(timeAgo(l.createdAt))}</span><h2 style="margin-top:8px">What changed</h2><p>${h(l.summary)}</p><table>${files}</table>${points("Decisions in the code", l.decisions)}${points("It depends on", l.depends)}${points("What could break", l.risks)}</div>
-<h2>Quick check</h2>${qs}${l.status === "pending" ? `<div class="card" id="callbox"><b>Do you feel you understand this change?</b><p class="muted" style="margin:4px 0 8px">A score is not the same as understanding. If you are not sure, say so. It will not count as evidence for your team until you follow up.</p><label class="opt"><input type="radio" name="call" value="understood" checked> Yes, I understand it</label><label class="opt"><input type="radio" name="call" value="clarify"> I need clarification</label><label class="opt"><input type="radio" name="call" value="investigate"> I need to investigate further</label><input type="text" id="note" maxlength="300" placeholder="What is unclear? Optional" style="margin-top:6px"></div><p><button id="go">Check my answers</button></p><p id="result" class="muted"></p><script>${script}</script>` : `<p class="muted">Already completed.</p>`}`, "", token);
+<h2>Quick check</h2>${qs}${l.status === "pending" ? `<div class="card" id="callbox"><b>Do you feel you understand this change?</b><p class="muted" style="margin:4px 0 8px">A score is not the same as understanding. If you are not sure, say so. It will not count as evidence for your team until you follow up.</p><label class="opt"><input type="radio" name="call" value="understood" checked> Yes, I understand it</label><label class="opt"><input type="radio" name="call" value="clarify"> I need clarification</label><label class="opt"><input type="radio" name="call" value="investigate"> I need to investigate further</label><input type="text" id="note" maxlength="300" placeholder="What is unclear? Optional" style="margin-top:6px"></div><p><button id="go">Check my answers</button></p><p id="result" class="muted"></p><script>${script}</script>` : `<p class="muted">Already completed. ${nextId ? `<a href="/lesson/${nextId}?t=${token}"><b>Next lesson →</b></a>` : `<a href="/map?t=${token}"><b>See your knowledge map →</b></a>`}</p>`}`, "", token);
 }
 function mapPage(root, token) {
     const rows = knowledgeMap(root)
@@ -70,7 +76,7 @@ function mapPage(root, token) {
         .join("");
     return page("Knowledge map", `<p class="muted">How much of each AI-changed file you have actually reviewed. Files with open lessons are the ones nobody has checked yet.</p><div class="card"><table><tr><th>File</th><th>AI changes</th><th>Understood</th><th></th><th></th></tr>${rows || `<tr><td colspan=5 class="muted">Nothing yet.</td></tr>`}</table></div>`, "map", token);
 }
-export function startServer(root, port, onReady) {
+export function startServer(root, port, onReady, opts = {}) {
     const token = crypto.randomBytes(12).toString("hex"); // keeps other websites and local processes from posting answers
     const server = http.createServer((req, res) => {
         const url = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -98,7 +104,8 @@ export function startServer(root, port, onReady) {
                     if (response === "understood" || response === "clarify" || response === "investigate")
                         done = setResponse(root, done, response, typeof note === "string" ? note : undefined);
                     await syncLesson(done, cfg.share);
-                    send(200, "application/json", JSON.stringify({ status: done.status }));
+                    const progress = reviewProgress(root);
+                    send(200, "application/json", JSON.stringify({ status: done.status, line: progressLine(progress), nextId: progress.nextId, progress }));
                 }
                 catch {
                     send(400, "application/json", JSON.stringify({ error: "bad request" }));
@@ -113,10 +120,29 @@ export function startServer(root, port, onReady) {
         const m = url.pathname.match(/^\/lesson\/(l_[a-f0-9]+)$/);
         if (m) {
             const lesson = getLesson(root, m[1]);
-            return lesson ? send(200, "text/html; charset=utf-8", lessonPage(lesson, token)) : send(404, "text/plain", "Not found");
+            return lesson ? send(200, "text/html; charset=utf-8", lessonPage(lesson, token, reviewProgress(root).nextId)) : send(404, "text/plain", "Not found");
         }
         send(404, "text/plain", "Not found");
     });
-    server.listen(port, "127.0.0.1", () => onReady(`http://127.0.0.1:${port}/?t=${token}`));
+    // With the default port, a busy 4317 (another project's dashboard, say) moves on to the next free one instead of failing.
+    const attempts = Math.max(1, opts.tries ?? 1);
+    const listen = (p, left) => {
+        server.once("error", (e) => {
+            if (e.code === "EADDRINUSE" && left > 1)
+                return listen(p + 1, left - 1);
+            if (opts.onError)
+                return opts.onError(e, p);
+            throw e;
+        });
+        server.listen(p, "127.0.0.1", () => {
+            server.removeAllListeners("error");
+            onReady(`http://127.0.0.1:${p}/?t=${token}`);
+        });
+    };
+    listen(port, attempts);
     return server;
+}
+/** The address of one page on a running dashboard, from the base address `startServer` reports. */
+export function pageUrl(base, pathname) {
+    return base.replace("/?t=", `${pathname}?t=`);
 }

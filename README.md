@@ -64,13 +64,15 @@ zevqi doctor                        # checks everything is wired up
 
 **No model key is needed.** The git scan, attested reviews, the pull-request gate and agent-written lessons all work without one. Add your own key only if you want Zevqi to write diff-specific questions:
 
-Restart Claude Code (or open `/hooks`), then code as usual. When your agent finishes a turn, a lesson is built in the background. Take it whenever you like:
+Restart Claude Code once (or open `/hooks`) so it loads the hooks, then code as usual. With a model key, a lesson is built in the background when your agent finishes a turn. Without one, your coding agent writes it, following the instructions `zevqi init` adds to `AGENTS.md`. Either way, the one command to remember is `zevqi`:
 
 ```bash
+zevqi                         # opens the dashboard at what is waiting (or shows the status)
 zevqi status                  # what is waiting
-zevqi learn                   # terminal quiz
+zevqi learn                   # the quiz in the terminal instead
 zevqi stats                   # streak, XP and level
-zevqi ui                      # local dashboard on 127.0.0.1
+zevqi ui                      # local dashboard on 127.0.0.1, opens your browser (--no-open to skip)
+zevqi doctor --live           # confirms the hooks fire: ask your agent to edit a file
 ```
 
 The key is optional and yours: `ZLEARN_API_KEY` is preferred, then `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, then the key saved by `zevqi config set apiKey`. It is billed by your provider, never by us.
@@ -100,10 +102,11 @@ Every hook always exits successfully, so Zevqi can never break your session.
 | `zevqi explain` | Explain your current uncommitted changes now. |
 | `zevqi status [--json]` | What is waiting, and which files nobody has reviewed. |
 | `zevqi stats [--json]` | Your streak, XP and level for this project. |
-| `zevqi ui [--port 4317]` | Local dashboard (lessons, quiz, knowledge map). |
+| `zevqi` | In a repo where Zevqi is on: opens what is waiting, or shows the status. |
+| `zevqi ui [--port 4317] [--no-open]` | Local dashboard (lessons, quiz, knowledge map). Opens your browser at the lesson waiting for you. |
 | `zevqi gate off\|warn\|block` | What happens when you commit with un-reviewed AI changes. |
 | `zevqi config show` / `set apiKey\|provider\|model\|baseUrl [value]` | Settings. `set apiKey` prompts with hidden input. |
-| `zevqi doctor [--json]` | Checks that everything is wired up. |
+| `zevqi doctor [--json] [--live]` | Checks that everything is wired up. `--live` waits for your agent's next edit and confirms the hooks fired. |
 | `zevqi team join\|status\|sync\|leave` | Share scores with your team. |
 | `zevqi check [--base <ref>] [--fail-on unreviewed\|blind]` | Pull-request gate: which changed files have AI changes nobody understands. |
 | `zevqi uninstall` | Removes the hooks (your lessons stay in `.zlearn/`). |
