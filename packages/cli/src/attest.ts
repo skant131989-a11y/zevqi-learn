@@ -25,12 +25,12 @@ export function answerProblem(answer: string, earlier: string[]): string | null 
   return null;
 }
 
-export async function attestReview(root: string, included: string[], text: string, commits: number): Promise<Lesson | null> {
+export async function attestReview(root: string, included: string[], text: string, commits: number, source?: { title: string; more: string }): Promise<Lesson | null> {
   const cfg = loadProject(root);
-  console.log("\n" + c.bold(c.cyan(`Read this change (the last ${commits} commit${commits === 1 ? "" : "s"} touching ${included.length} file${included.length === 1 ? "" : "s"})`)));
+  console.log("\n" + c.bold(c.cyan(source?.title ?? `Read this change (the last ${commits} commit${commits === 1 ? "" : "s"} touching ${included.length} file${included.length === 1 ? "" : "s"})`)));
   const lines = text.split("\n");
   console.log(lines.slice(0, MAX_DIFF_LINES).join("\n"));
-  if (lines.length > MAX_DIFF_LINES) console.log(c.dim(`\n[… ${lines.length - MAX_DIFF_LINES} more lines. Read the rest with: git log -p -n ${commits} -- ${included.join(" ")}]`));
+  if (lines.length > MAX_DIFF_LINES) console.log(c.dim(`\n[… ${lines.length - MAX_DIFF_LINES} more lines. Read the rest with: ${source?.more ?? `git log -p -n ${commits} -- ${included.join(" ")}`}]`));
   console.log("\n" + c.bold("Describe it in your own words. Your answers stay on your machine, and nothing here is graded."));
 
   const rl = readline.createInterface({ input: process.stdin });

@@ -141,6 +141,66 @@ export function diffForHistory(root: string, files: string[], commits = 5): { te
   return { text: parts.join("\n"), included };
 }
 
+/** The base a branch review compares with: the one given, else the first of origin/main, origin/master, main, master that exists. Null if none does. */
+export function branchBase(root: string, base?: string): string | null {
+  for (const ref of [base, "origin/main", "origin/master", "main", "master"]) {
+    if (!ref) continue;
+    try {
+      git(root, ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+      return ref;
+    } catch {
+      // try the next one
+    }
+  }
+  return null;
+}
+
+/** What this branch changes compared with its base, file by file (a merge-base diff, like a pull request shows). */
+export function diffForBranch(root: string, base: string, files: string[]): { text: string; included: string[] } {
+  const parts: string[] = [];
+  const included: string[] = [];
+  let total = 0;
+  for (const file of files) {
+    if (total >= TOTAL) break;
+    const rel = toPosix(path.relative(root, path.resolve(root, file)));
+    if (rel.startsWith("..")) continue;
+    let chunk = "";
+    try {
+      chunk = git(root, ["diff", "--no-color", `${base}...HEAD`, "--", rel]);
+    } catch {
+      // ignore
+    }
+    if (!chunk.trim()) continue;
+    if (chunk.length > PER_FILE * 2) chunk = chunk.slice(0, PER_FILE * 2) + "\n[... truncated ...]\n";
+    parts.push(`### ${rel}\n${chunk}`);
+    included.push(rel);
+    total += chunk.length;
+  }
+  return { text: parts.join("\n"), included };
+}
+
+/** Files with uncommitted changes among these. A review fingerprints files as they are on disk, so they must match what was committed. */
+export function dirtyAmong(root: string, files: string[]): string[] {
+  if (files.length === 0) return [];
+  try {
+    return git(root, ["status", "--porcelain", "--", ...files])
+      .split("\n")
+      .map((l) => l.slice(3).trim())
+      .filter(Boolean)
+      .map(toPosix);
+  } catch {
+    return [];
+  }
+}
+
+export function headSha(root: string): string | null {
+  try {
+    return git(root, ["rev-parse", "HEAD"]).trim();
+  } catch {
+    return null;
+  }
+}
+
 /** Raw history for `zevqi scan`: one record per non-merge commit with its author, date, subject, body and changed files. */
 export function scanLog(root: string, months = 12, maxCommits = 30000): string {
   try {
