@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { loadProject, projectDir } from "../config.js";
-import { canonicalPath, changedFiles, diffForHistory, fileRevs, repoName, repoRoot } from "../git.js";
+import { branchBase, canonicalPath, changedFiles, diffForBranch, diffForHistory, dirtyAmong, fileRevs, headSha, repoName, repoRoot } from "../git.js";
+import { changedSince } from "../git.js";
+import { execFileSync } from "node:child_process";
 import { explainDiff } from "../ai.js";
 import { attestReview } from "../attest.js";
 import { apiKey, loadGlobal } from "../config.js";
@@ -76,35 +78,73 @@ export const review = {
     name: "review",
     group: "Daily use",
     summary: "Review recent committed changes to files (a teammate's, or your own from earlier) and add your evidence",
-    usage: "zevqi review <file...> [--commits 5] [--no-ai]",
+    usage: "zevqi review <file...> [--commits 5] [--no-ai]  |  zevqi review --branch [--base origin/main]  |  zevqi review --pr <number>",
     examples: [
         "zevqi review src/payments/refund.ts",
         "zevqi review src/auth/session.ts src/auth/tokens.ts --commits 3",
+        "zevqi review --branch                 # the files this branch changes, compared with main",
+        "zevqi review --pr 123                 # same, for a pull request you have checked out (gh pr checkout 123)",
     ],
     async run(ctx) {
         const root = needEnabled();
         ensureAiNotice(root);
+        const branchMode = Boolean(ctx.flags.branch || ctx.flags.pr);
         const wanted = ctx.args.map((f) => f.trim()).filter(Boolean);
-        if (wanted.length === 0)
-            fail("Name the files to review.", 2, "Example: zevqi review src/payments/refund.ts");
+        if (wanted.length === 0 && !branchMode)
+            fail("Name the files to review.", 2, "Example: zevqi review src/payments/refund.ts, or review a whole branch: zevqi review --branch");
         const commits = Math.max(1, Math.min(20, Number(flagStr(ctx.flags.commits)) || 5));
         const cfg = loadProject(root);
+        let branchSource;
         // Canonical paths on both sides: a Windows short name (RUNNER~1) or a symlinked cwd must not make a file look like it is outside the repo.
-        const files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(canonicalPath(root), canonicalPath(path.resolve(process.cwd(), f))).split(path.sep).join("/"));
-        const { text, included } = diffForHistory(root, files, commits);
+        let files = wanted.slice(0, cfg.maxFiles).map((f) => path.relative(canonicalPath(root), canonicalPath(path.resolve(process.cwd(), f))).split(path.sep).join("/"));
+        let diff;
+        if (branchMode) {
+            // A branch or pull request review: the files it changes against its base, read as the reviewer has them checked out.
+            const prNumber = flagStr(ctx.flags.pr);
+            let baseFlag = flagStr(ctx.flags.base);
+            if (ctx.flags.pr) {
+                if (!prNumber || !/^\d+$/.test(prNumber))
+                    fail("--pr needs the pull request number.", 2, "Example: zevqi review --pr 123");
+                let info;
+                try {
+                    info = JSON.parse(execFileSync("gh", ["pr", "view", prNumber, "--json", "baseRefName,headRefOid"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+                }
+                catch {
+                    return fail("Could not read that pull request with the GitHub CLI.", 1, "Install gh and sign in (gh auth login), or review the branch you have checked out with: zevqi review --branch");
+                }
+                if (info.headRefOid && headSha(root) !== info.headRefOid)
+                    fail(`You are not on the latest commit of pull request #${prNumber}.`, 1, `Check it out first: gh pr checkout ${prNumber}`);
+                baseFlag = baseFlag ?? (info.baseRefName ? `origin/${info.baseRefName}` : undefined);
+            }
+            const base = branchBase(root, baseFlag);
+            if (!base)
+                fail("Could not find a base branch to compare with.", 1, "Pass one: zevqi review --branch --base origin/main");
+            files = changedSince(root, base).slice(0, cfg.maxFiles);
+            if (files.length === 0)
+                return void console.log(`This branch has no changes compared with ${base}.`);
+            const dirty = dirtyAmong(root, files);
+            if (dirty.length)
+                fail(`These files have uncommitted changes: ${dirty.slice(0, 5).join(", ")}.`, 1, "A review records the files as committed. Commit or stash first, so the evidence matches what gets merged.");
+            diff = diffForBranch(root, base, files);
+            branchSource = { title: `Read this branch (${diff.included.length} file${diff.included.length === 1 ? "" : "s"} changed compared with ${base})`, more: `git diff ${base}...HEAD` };
+        }
+        else {
+            diff = diffForHistory(root, files, commits);
+        }
+        const { text, included } = diff;
         if (!text.trim())
             return void console.log("No git history found for those files. Check the paths, and that the changes are committed.");
         // With a model key the review is AI-written questions. Without one (or with --no-ai) you read the change and describe it yourself.
         if (ctx.flags["no-ai"] || !apiKey(loadGlobal())) {
             try {
-                await attestReview(root, included, text, commits);
+                await attestReview(root, included, text, commits, branchSource);
             }
             catch (e) {
                 fail(e instanceof Error ? e.message : String(e));
             }
             return;
         }
-        console.log(c.dim(`Reading the last ${commits} commit${commits === 1 ? "" : "s"} for ${included.length} file${included.length === 1 ? "" : "s"}…`));
+        console.log(c.dim(branchSource ? `Reading the branch changes for ${included.length} file${included.length === 1 ? "" : "s"}…` : `Reading the last ${commits} commit${commits === 1 ? "" : "s"} for ${included.length} file${included.length === 1 ? "" : "s"}…`));
         try {
             const explanation = await explainDiff(text, included, repoName(root), "review");
             const lesson = {

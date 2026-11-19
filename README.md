@@ -98,6 +98,7 @@ Every hook always exits successfully, so Zevqi can never break your session.
 | `zevqi scan [--months 12] [--names] [--dry-run]` | Map who holds the knowledge of each file from git history. No model, no key. Shares counts, dates and pseudonymous author ids, never code, messages or emails. |
 | `zevqi lesson add` | Save a lesson your coding agent wrote (JSON on stdin), so no key is needed. |
 | `zevqi learn [id]` | Take the quiz for the oldest un-reviewed change, then say whether you understand it. |
+| `zevqi review --branch [--base origin/main]` / `--pr <n>` | Review everything a branch or pull request changes, in your own words, and record it as evidence for each changed file. |
 | `zevqi review <file...> [--commits 5]` | Review the recent committed changes to files (a teammate's, or your own from earlier) and add your own evidence. |
 | `zevqi explain` | Explain your current uncommitted changes now. |
 | `zevqi status [--json]` | What is waiting, and which files nobody has reviewed. |
@@ -157,6 +158,15 @@ jobs:
 ```
 
 Without a `team-key` the action skips quietly and tells you why. Pull requests from forks have a read-only token, so the comment is skipped there while the check still runs. Other inputs: `comment: "false"` (no comment), `base` (a different base ref), `version` (pin the CLI version) and `server` (self-hosted).
+
+**Closing the loop on a pull request.** When the comment says a file has an AI change nobody has understood, the reviewer checks the branch out and runs one command. It prints the real diff against the base branch, asks three questions to answer in your own words (nothing is graded, and your answers stay on your machine), and records the result for every changed file. Re-running the check then passes:
+
+```bash
+gh pr checkout 123
+zevqi review --pr 123          # or: zevqi review --branch
+```
+
+The review refuses if the changed files have uncommitted edits, so the evidence always matches what gets merged.
 
 To run it yourself in any CI, `zevqi check --base origin/main --comment-file zevqi-comment.md` writes the same comment as a Markdown file.
 

@@ -13,6 +13,8 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 - **`zevqi doctor --live`** waits for your agent's next edit and confirms the hooks really fired, with what to try if they did not. Plain `zevqi doctor` now also says when the hooks last ran and checks that each installed hook still points at a zevqi that exists.
 - `zevqi setup` ends with the one step that is easy to miss: restart Claude Code once so it loads the hooks.
 
+- **`zevqi review --branch` and `zevqi review --pr <n>`** review everything a branch or pull request changes, in one pass. The reviewer reads the real diff against the base branch, describes it in their own words (or takes the quiz, with their own model key), and the result is recorded as evidence for each changed file. This closes the pull request loop: the check names files nobody has understood, a reviewer runs the command, the next check passes. It refuses when the changed files have uncommitted edits, so the evidence matches what gets merged.
+
 ### Changed
 - The commit-gate message says `Run "zevqi"` instead of `zevqi learn`. `zevqi learn` still works.
 - `zevqi ui` moves to the next free port when 4317 is busy, and a port you ask for with `--port` that is busy now fails with a short message instead of a stack trace.

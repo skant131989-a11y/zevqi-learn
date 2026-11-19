@@ -237,3 +237,49 @@ test("the browser is opened only for the local dashboard address, and never in C
   assert.equal(shouldOpenBrowser({}, { ZEVQI_NO_OPEN: "1" }), false);
   if (process.platform !== "linux") assert.equal(shouldOpenBrowser({}, {}), true);
 });
+
+test("review --branch: a reviewer's understanding of a whole branch is recorded, and only if it matches what was committed", () => {
+  const r = makeRepo();
+  const git = (...a) => execFileSync("git", ["-c", "user.email=a@b.c", "-c", "user.name=t", ...a], { cwd: r.repo, encoding: "utf8" });
+  git("add", "-A");
+  git("commit", "-qm", "base files");
+  git("branch", "-M", "main");
+  enable(r);
+  const nothing = run(["review", "--branch", "--base", "main"], { cwd: r.repo, env: r.env });
+  assert.equal(nothing.status, 0);
+  assert.match(nothing.stdout, /no changes compared with main/);
+
+  git("checkout", "-qb", "feature");
+  fs.writeFileSync(path.join(r.repo, "src", "a.js"), "export const a = 2;\n");
+  fs.writeFileSync(path.join(r.repo, "src", "c.js"), "export const c = 3;\n");
+  git("add", "src");
+  git("commit", "-qm", "change a, add c");
+
+  // uncommitted edits to a reviewed file: refuse, so the evidence matches what gets merged
+  fs.appendFileSync(path.join(r.repo, "src", "a.js"), "// local edit\n");
+  const dirty = run(["review", "--branch", "--base", "main"], { cwd: r.repo, env: r.env });
+  assert.equal(dirty.status, 1);
+  assert.match(dirty.stderr, /uncommitted changes: src\/a\.js/);
+  git("checkout", "--", "src/a.js");
+
+  const answers = "it raises a to two and adds a new constant c\nif a caller still expects one, it now gets two\nit depends on callers only reading the exports\ny\n";
+  const out = run(["review", "--branch", "--base", "main"], { cwd: r.repo, env: r.env, input: answers });
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  assert.match(out.stdout, /Read this branch \(2 files changed compared with main\)/);
+  assert.match(out.stdout, /export const a = 2/, "the reviewer reads the real diff");
+  assert.match(out.stdout, /Recorded: you read this change/);
+
+  const dir = path.join(r.repo, ".zlearn", "lessons");
+  const lessons = fs.readdirSync(dir).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")));
+  assert.equal(lessons.length, 1);
+  assert.equal(lessons[0].kind, "review");
+  assert.deepEqual([...lessons[0].changedFiles].sort(), ["src/a.js", "src/c.js"]);
+  const blob = git("hash-object", "src/a.js").trim().slice(0, 12);
+  assert.equal(lessons[0].revs["src/a.js"], blob, "fingerprinted as committed on the branch");
+  assert.equal(lessons[0].status, "passed");
+
+  const bad = run(["review", "--pr", "abc"], { cwd: r.repo, env: r.env });
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /needs the pull request number/);
+  assert.equal(run(["review"], { cwd: r.repo, env: r.env }).status, 2, "with no files and no --branch it still asks for files");
+});
