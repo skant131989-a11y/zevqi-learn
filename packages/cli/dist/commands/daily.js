@@ -1,6 +1,7 @@
+import fs from "node:fs";
 import path from "node:path";
 import { loadProject, projectDir } from "../config.js";
-import { canonicalPath, changedFiles, diffForHistory, fileRevs, repoName } from "../git.js";
+import { canonicalPath, changedFiles, diffForHistory, fileRevs, repoName, repoRoot } from "../git.js";
 import { explainDiff } from "../ai.js";
 import { attestReview } from "../attest.js";
 import { apiKey, loadGlobal } from "../config.js";
@@ -10,7 +11,8 @@ import { AiError, explainJob, hooksInstalled } from "../hooks.js";
 import { getLesson, knowledgeMap, listLessons, pending } from "../lessons.js";
 import { maybeNudge } from "../nudge.js";
 import { runQuiz } from "../quiz.js";
-import { startServer } from "../server.js";
+import { openBrowser, shouldOpenBrowser } from "../open.js";
+import { pageUrl, startServer } from "../server.js";
 import { bar, computeStats } from "../stats.js";
 import { c, fail, timeAgo, uid, writeJson } from "../util.js";
 import { emit, ensureAiNotice, flagStr, needEnabled, needRoot } from "../context.js";
@@ -67,7 +69,7 @@ export const learn = {
         await runQuiz(root, lesson);
         const left = pending(root).length;
         if (left)
-            console.log(c.dim(`${left} more waiting. Run zevqi learn again.`));
+            console.log(c.dim(`${left} more waiting. Run zevqi again.`));
     },
 };
 export const review = {
@@ -174,11 +176,43 @@ export const stats = {
 export const ui = {
     name: "ui",
     group: "Daily use",
-    summary: "Open the local dashboard in your browser",
-    usage: "zevqi ui [--port 4317]",
+    summary: "Open the local dashboard in your browser, at the lesson waiting for you",
+    usage: "zevqi ui [--port 4317] [--no-open]",
     run(ctx) {
-        const root = needEnabled();
-        const port = Number(flagStr(ctx.flags.port)) || 4317;
-        startServer(root, port, (url) => console.log(`zevqi dashboard: ${c.cyan(url)}\n${c.dim("Press Ctrl+C to stop.")}`));
+        openDashboard(needEnabled(), ctx.flags);
     },
 };
+/** Starts the local dashboard and opens it. With a lesson waiting, the browser lands on that lesson. */
+function openDashboard(root, flags) {
+    const explicit = flagStr(flags.port);
+    const next = [...pending(root)].reverse()[0];
+    startServer(root, Number(explicit) || 4317, (base) => {
+        const target = next ? pageUrl(base, `/lesson/${next.id}`) : base;
+        console.log(`zevqi dashboard: ${c.cyan(target)}`);
+        if (shouldOpenBrowser(flags) && openBrowser(target))
+            console.log(c.dim(next ? "Opened your browser at the lesson that is waiting." : "Opened your browser."));
+        console.log(c.dim("Press Ctrl+C to stop."));
+    }, {
+        tries: explicit ? 1 : 10, // the default port moves on to the next free one; a port you asked for must be that port
+        onError: (e, port) => {
+            console.error(c.red(`zevqi: could not start the dashboard on port ${port} (${e.code ?? e.message}).`));
+            console.error(c.dim("Try another port: zevqi ui --port 4400"));
+            process.exitCode = 1;
+        },
+    });
+}
+/**
+ * `zevqi` on its own. In a repository where Zevqi is on: lessons waiting open the dashboard (in a terminal), otherwise the status.
+ * Returns false when there is nothing to do here, and the caller shows the help instead.
+ */
+export async function defaultAction(ctx) {
+    const root = repoRoot(process.cwd());
+    if (!root || !fs.existsSync(projectDir(root)))
+        return false;
+    if (!ctx.json && process.stdout.isTTY && pending(root).length > 0) {
+        openDashboard(root, ctx.flags);
+        return true;
+    }
+    await status.run(ctx);
+    return true;
+}

@@ -4,6 +4,7 @@ import { repoRoot } from "../git.js";
 import { checkTeamKey, joinTeam, resolveTeam } from "../team.js";
 import { c, fail } from "../util.js";
 import { flagStr, type Command, type Context } from "../context.js";
+import { hooksInstalled } from "../hooks.js";
 import { init } from "./setup.js";
 import { scan } from "./scan.js";
 import { envVar } from "../env.js";
@@ -69,6 +70,15 @@ export const setup: Command = {
     console.log(`\n${c.green("✓ Setup complete.")}`);
     console.log(`  See your knowledge map:   ${c.cyan(dashboardUrl(t?.server ?? server))}  ${c.dim("(sign in with your email, then Open dashboard)")}`);
     console.log(`  Understand a file:        ${c.bold("zevqi review <file>")}`);
-    console.log(`  What is waiting:          ${c.bold("zevqi status")}`);
+
+    // The one thing that is easy to miss: Claude Code only reads hooks when it starts.
+    console.log(c.bold("\nOne step left"));
+    if (hooksInstalled(root).length > 0) {
+      console.log(`  Restart Claude Code in this folder once (or open /hooks), so it loads the hooks.`);
+      console.log(`  After that there is nothing to remember: when your agent finishes, run ${c.bold("zevqi")} and it opens what is waiting.`);
+      console.log(c.dim(`  Not sure it works? ${"zevqi doctor --live"} waits for your agent's next edit and confirms the hooks fired.`));
+    } else {
+      console.log(`  No Claude Code hooks were installed. After your agent changes code, run ${c.bold("zevqi")} and it opens what is waiting.`);
+    }
   },
 };

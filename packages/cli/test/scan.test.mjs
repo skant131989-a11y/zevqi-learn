@@ -255,6 +255,9 @@ test("setup: one command joins the team, turns Zevqi on and uploads the first kn
   assert.match(out.stdout, /Setup complete/);
   assert.ok(out.stdout.includes(team.url + "/account"), "it ends with the dashboard link");
   assert.match(out.stdout, /zevqi review <file>/, "and the next command to copy");
+  assert.match(out.stdout, /One step left/, "it names the one step that is easy to miss");
+  assert.match(out.stdout, /Restart Claude Code in this folder once/);
+  assert.match(out.stdout, /zevqi doctor --live/);
 
   assert.ok(fs.existsSync(path.join(repo, ".zlearn", "config.json")), "Zevqi is on in the repository");
   assert.ok(fs.existsSync(path.join(repo, ".claude", "settings.local.json")), "the Claude Code hooks are installed");

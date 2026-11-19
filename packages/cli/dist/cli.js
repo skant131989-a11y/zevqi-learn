@@ -2,6 +2,7 @@
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./args.js";
 import { findCommand, renderCommandHelp, renderHelp, suggest } from "./commands/index.js";
+import { defaultAction } from "./commands/daily.js";
 import { c, CliError, fail } from "./util.js";
 import { VERSION } from "./version.js";
 const CLI_PATH = fileURLToPath(import.meta.url);
@@ -10,6 +11,12 @@ export async function main(argv) {
     const name = pos[0];
     if (flags.version || name === "version" || name === "--version")
         return void console.log(VERSION);
+    if (!name && !flags.help) {
+        // zevqi on its own: in a repo where Zevqi is on, go straight to what needs doing. Anywhere else, the help.
+        const own = { args: [], flags, json: Boolean(flags.json), cliPath: CLI_PATH, version: VERSION };
+        if (await defaultAction(own))
+            return;
+    }
     if (!name || (name === "help" && !pos[1]))
         return void console.log(renderHelp(VERSION));
     if (name === "help") {
