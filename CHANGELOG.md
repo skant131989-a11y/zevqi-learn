@@ -4,6 +4,9 @@ All notable changes to Zevqi (formerly zlearn). Versions follow [semver](https:/
 
 ## Unreleased
 
+### Added
+- **`zevqi audit`**: a one-page read-out of how much of a repository rests on too few people, from git history alone. It counts files only ever changed by one person (and how many are in sensitive areas such as auth, billing and infrastructure), files whose main author has gone quiet, and files untouched for six months, and names the areas where knowledge is thinnest. It needs no setup, team or key, runs on your machine and sends nothing. `--html` writes one self-contained page (no scripts, no external requests) you can share or print to PDF; `--json` is for scripts. It names nobody unless you pass `--names`, and it states what git cannot tell you: who understands a file.
+
 ### Changed
 - README and the npm description now say who it is for: engineers learn what their agent wrote, leaders (CTO, VP Engineering, engineering managers) decide where to spend review time.
 

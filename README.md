@@ -106,6 +106,7 @@ Every hook always exits successfully, so Zevqi can never break your session.
 | `zevqi init [--shared\|--global] [--gate off\|warn\|block]` | Turn it on in this repo and install the hooks. |
 | `zevqi setup --key <teamKey> [--email <you>]` | One command: join your team, turn Zevqi on here, and upload the first knowledge map. |
 | `zevqi scan [--months 12] [--names] [--dry-run]` | Map who holds the knowledge of each file from git history. No model, no key. Shares counts, dates and pseudonymous author ids, never code, messages or emails. |
+| `zevqi audit [--months 12] [--html [file]] [--names]` | A one-page read-out of how much of the repository rests on too few people, from git history alone. Runs on your machine and sends nothing; `--html` writes a single self-contained page you can share or print to PDF. |
 | `zevqi lesson add` | Save a lesson your coding agent wrote (JSON on stdin), so no key is needed. |
 | `zevqi learn [id]` | Take the quiz for the oldest un-reviewed change, then say whether you understand it. |
 | `zevqi review --branch [--base origin/main]` / `--pr <n>` | Review everything a branch or pull request changes, in your own words, and record it as evidence for each changed file. |
