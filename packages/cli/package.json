@@ -1,6 +1,6 @@
 {
   "name": "zevqi-learn",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Engineers learn what their AI agent just wrote. Leaders see which files the team really understands. A knowledge map from git, attested reviews, Claude Code hooks and a team dashboard. No API key needed.",
   "type": "module",
   "bin": {
