@@ -5,9 +5,10 @@ import { team } from "./team.js";
 import { check } from "./check.js";
 import { lesson } from "./lesson.js";
 import { scan } from "./scan.js";
+import { audit } from "./audit.js";
 import { setup } from "./quickstart.js";
 import { hook } from "./hook.js";
-export const COMMANDS = [setup, init, uninstall, config, doctor, learn, review, lesson, scan, explain, status, stats, ui, gate, team, check, hook];
+export const COMMANDS = [setup, init, uninstall, config, doctor, learn, review, lesson, scan, audit, explain, status, stats, ui, gate, team, check, hook];
 export function findCommand(name) {
     return COMMANDS.find((cmd) => cmd.name === name || cmd.aliases?.includes(name));
 }
